@@ -1,0 +1,286 @@
+---
+title: KEGG pathway analysis for control data
+author: Aaron Lun
+date: 12 September 2016
+---
+
+```{r, echo=FALSE, results='hide'}
+knitr::opts_chunk$set(error=FALSE, message=FALSE)
+knitr::opts_knit$set(width=100)
+options(width=100)
+```
+
+# Examining DE in gene sets for the control comparisons
+
+Checking for DE in GO- or KEGG-based gene sets.
+Setting up a function to do this quickly and efficiently for each contrast.
+
+```{r}
+dir.create("pathways", showWarning=FALSE)
+dir.create("pathways/results_de", showWarning=FALSE)
+dir.create("pathways/results_lfc", showWarning=FALSE)
+threshold <- readRDS("threshold_lfc.rds")
+require(limma)
+require(org.Hs.eg.db)
+test_gene_sets <- function(incoming, use.threshold=NA) {
+    # Converting names and finding DE genes.
+    stuff <- read.table(incoming, header=TRUE, stringsAsFactor=FALSE)
+    entrez <- select(org.Hs.eg.db, keys=stuff$ENSEMBL, keytype="ENSEMBL", column="ENTREZID")
+    entrez <- entrez[match(stuff$ENSEMBL, entrez$ENSEMBL),]
+    if (is.na(use.threshold)) { 
+        is.de <- stuff$P.Value <= threshold 
+    } else {
+        is.de <- stuff$adj.P.Val <= use.threshold
+    }
+    is.de <- is.de & !is.na(entrez$ENTREZID)
+
+    # Running KEGG.
+    kegg <- kegga(entrez$ENTREZID[is.de], species="Hs")
+    kegg <- kegg[order(kegg$P.DE),]
+    write.table(file=file.path("pathways", dirname(incoming), 
+        paste0("kegg_", basename(incoming))), kegg, col.names=NA, 
+        sep="\t", quote=FALSE)
+       
+    # Running GO. 
+    go <- goana(entrez$ENTREZID[is.de], species="Hs")
+    go <- go[order(go$P.DE),]
+    write.table(file=file.path("pathways", dirname(incoming), 
+        paste0("go_", basename(incoming))), go, col.names=NA, 
+        sep="\t", quote=FALSE)
+
+    # Also reporting the DE genes.
+    return(list(kegg=kegg, go=go, 
+        de=data.frame(SYMBOL=stuff$SYMBOL[is.de], entrez[is.de,], stringsAsFactors=FALSE)))
+}
+```
+
+Also maintaining a list of genes involved in terms of interest, e.g., cell cycle, DNA replication.
+
+```{r}
+of.interest <- list()
+allkegg <- getGeneKEGGLinks(species.KEGG = "hsa", convert = FALSE)
+of.interest$CellCycle <- allkegg$GeneID[allkegg$PathwayID=="path:hsa04110"]
+of.interest$DNARep <- allkegg$GeneID[allkegg$PathwayID=="path:hsa03030"]
+```
+
+## Gene set tests for the siRNA comparisons
+
+First, the Ambion controls against the cells.
+
+```{r}
+out <- test_gene_sets("results_de/siRNA_Ambion_vs_cells.txt")
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+Same again for the log-fold change threshold.
+
+```{r}
+out <- test_gene_sets("results_lfc/siRNA_Ambion_vs_cells.txt")
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+Next, the Dharmacon controls.
+
+```{r}
+out <- test_gene_sets("results_de/siRNA_Dharmacon_vs_cells.txt")
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+Same again for the log-fold change threshold.
+
+```{r}
+out <- test_gene_sets("results_lfc/siRNA_Dharmacon_vs_cells.txt")
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+Finally, the two sets of controls against each other.
+
+```{r}
+out <- test_gene_sets("results_de/siRNA_Ambion_vs_Dharmacon.txt")
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+Same again for the log-fold change threshold.
+
+```{r}
+out <- test_gene_sets("results_lfc/siRNA_Ambion_vs_Dharmacon.txt")
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+## Gene set tests for the LNA comparisons
+
+First testing the transfection effect.
+
+```{r}
+out <- test_gene_sets("results_de/LNA_trans_vs_cells.txt")
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+Again, with a log-fold change threshold.
+
+```{r}
+out <- test_gene_sets("results_lfc/LNA_trans_vs_cells.txt")
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+Testing the effect of negative guide A transfection.
+
+```{r}
+out <- test_gene_sets("results_de/LNA_controlA_vs_trans.txt")
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+Again, with a log-fold change threshold.
+
+```{r}
+out <- test_gene_sets("results_lfc/LNA_controlA_vs_trans.txt")
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+Testing the effect of negative guide B transfection.
+
+```{r}
+out <- test_gene_sets("results_de/LNA_controlB_vs_trans.txt")
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+Again, with a log-fold change threshold.
+
+```{r}
+out <- test_gene_sets("results_lfc/LNA_controlB_vs_trans.txt")
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+Next, the two controls against each other.
+
+```{r}
+out <- test_gene_sets("results_de/LNA_controlA_vs_controlB.txt")
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+Again, with a log-fold change threshold.
+
+```{r}
+out <- test_gene_sets("results_lfc/LNA_controlA_vs_controlB.txt")
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+Finally, as a special treat, we test the effect of 289 itself (we use the supplementary tables in which the DE genes have already been defined, so all genes are included).
+
+```{r}
+out <- test_gene_sets("results_lfc/SUPP_combined_LNA_289.txt", use.threshold=1)
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+## Gene set tests for the CRISPRi comparisons
+
+Testing the negative guide-treated cells against the Cas9-only clone 2.
+
+```{r}
+out <- test_gene_sets("results_de/CRISPRi_negguide2_vs_clone2_I.txt")
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+Repeating with a log-fold change threshold.
+
+```{r}
+out <- test_gene_sets("results_lfc/CRISPRi_negguide2_vs_clone2_I.txt")
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+And again, for the Cas9-only clone 2 against WT cells.
+
+```{r}
+out <- test_gene_sets("results_de/CRISPRi_clone2_vs_cells_I.txt")
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+Repeating with a log-fold change threshold.
+
+```{r}
+out <- test_gene_sets("results_lfc/CRISPRi_clone2_vs_cells_I.txt")
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+Finally, for the common set in all clones against WT cells (the threshold can be anything, as only the significant genes have non-unity adjusted p-values in this table).
+
+```{r}
+out <- test_gene_sets("results_de/combined_clones.txt", use.threshold=0.05)
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+Repeating with a log-fold change threshold.
+
+```{r}
+out <- test_gene_sets("results_lfc/combined_clones.txt", use.threshold=0.05)
+head(out$kegg)
+head(out$go)
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$CellCycle]
+out$de$SYMBOL[out$de$ENTREZID %in% of.interest$DNARep]
+```
+
+# Session information
+
+```{r}
+sessionInfo()
+```

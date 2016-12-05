@@ -9,8 +9,9 @@ For internal use, the `pullover.R` script creates links to FASTQ and BAM files i
 For internal use, the `combine_metadata.R` script pools metadata information from the original directories.
 - The `run_order.R` script in `internal/analysis/differential` executes all the Rmarkdown scripts to perform the DE (`de_analysis.Rmd`) and pathway analyses (`kegg.Rmd`).
 It also executes the various R scripts to create the necessary plots (`make_*.R`).
+This must be done in the correct order.
 - The `genomic_tracker.R` script in `internal/analysis/genomic/` looks at the genomic context of the DE genes for the CRISPRi comparisons.
-The Bash scripts in `Thakore_peaks` perform realignment and peak-calling for the Thakore _et al._ data.
+The Bash scripts in `Thakore_peaks` align and call peaks from the Thakore _et al._ data.
 - The `make_h19.R` script in `internal/analysis/h19/` makes a barplot of expression for known target genes of H19.
 - The various R scripts in `internal/analysis/arrayexpress` prepare the data for submission to ArrayExpress.
 

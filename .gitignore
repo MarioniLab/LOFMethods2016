@@ -12,14 +12,14 @@
 *.bed
 *.html
 
-internal/analysis/differential/figure/
-internal/analysis/differential/kegg.md
-internal/analysis/differential/old_kegg.md
-internal/analysis/differential/pathways/
-internal/analysis/differential/ref.md
-internal/analysis/differential/results_de/
-internal/analysis/differential/results_lfc/
-internal/analysis/genomic/hg19.ensGene
-internal/analysis/logcount.err
-internal/misc/
-internal/pics/
+analysis/differential/figure/
+analysis/differential/kegg.md
+analysis/differential/old_kegg.md
+analysis/differential/pathways/
+analysis/differential/ref.md
+analysis/differential/results_de/
+analysis/differential/results_lfc/
+analysis/genomic/hg19.ensGene
+analysis/logcount.err
+misc/
+pics/

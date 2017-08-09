@@ -4,6 +4,12 @@ author: Aaron Lun
 date: 12 September 2016
 output:
   html_document:
+    toc: true
+    toc_float: true
+    depth: 3
+    number_sections: true
+    theme: united 
+    highlight: tango    
     fig_caption: false
 ---
 
@@ -42,6 +48,61 @@ stopifnot(all(!is.na(m)))
 metadata <- metadata[m,]
 ```
 
+Also loading the heterogeneous data.
+
+```{r}
+raw.counts2 <- read.table("../../../real_20161212/analysis/genic_counts.tsv", header=TRUE, row.names=1)
+lengths2 <- raw.counts2[,1]
+raw.counts2 <- raw.counts2[,-1]
+dim(raw.counts2)
+```
+
+We also need to sum together technical replicates.
+
+```{r, message=FALSE}
+techreps <- sub("\\.s_[0-9]*\\.r", "", colnames(raw.counts2))
+table(table(techreps))
+all.counts2 <- sumTechReps(raw.counts2, techreps)
+dim(all.counts2)
+```
+
+We examine the experimental design to determine which samples belong to which group.
+
+```{r}
+metadata2 <- read.csv("../../../real_20161212/analysis/metadata.csv", header=TRUE, stringsAsFactors=FALSE)
+m <- match(sub(".*(D[0-9]{3}_D[0-9]{3}).*", "\\1", colnames(all.counts2)), 
+           sub("-", "_", metadata2$Indexes))
+stopifnot(all(!is.na(m)))
+metadata2 <- metadata2[m,]
+groupings2 <- sub("_exp[0-9]b?", "", metadata2$Description)
+groupings2 <- gsub("[ _]", "", groupings2)
+repnum2 <- sub(".*_(exp[0-9]b?).*", "\\1", metadata2$Description)
+table(groupings2)
+```
+
+Keeping only the groups we're interested in.
+We don't use Guide 1 for 289 because it didn't give a good knockdown, and we omit two libraries with very low depths.
+
+```{r}
+keep <- groupings2 %in% c("Hela289g9hetero", "HelaBFPhetero", 
+    "HelaH19hetero", "Helahetero", "HelaNc1hetero", "HelaNc2hetero")
+discard <- c(40, 42)
+data.frame(Lost=cbind(summary(colSums(all.counts2)[discard])), 
+           Kept=cbind(summary(colSums(all.counts2)[-discard])))
+keep[discard] <- FALSE
+all.counts2 <- all.counts2[,keep]
+metadata2 <- data.frame(Batch="20161212", Library=tolower(metadata2$DO.numbers[keep]),
+    Sample=groupings2[keep], Experiment=repnum2[keep])
+```
+
+Combining the two tables together.
+
+```{r}
+stopifnot(identical(rownames(all.counts), rownames(all.counts2)))
+all.counts <- cbind(all.counts, all.counts2)
+metadata <- rbind(metadata, metadata2)
+```
+
 Generating a `DGEList` object.
 
 ```{r}
@@ -65,7 +126,7 @@ Colouring by type of experiment (CRISPRi, siRNA or LNA).
 
 ```{r}
 col <- rep("grey80", ncol(y)) # cells alone
-col[grepl("(clone|guide)", y$samples$group)] <- "orange" # CRISPRi
+col[grepl("(clone|guide|hetero)", y$samples$group)] <- "orange" # CRISPRi
 col[grepl("([Nn]egcontrol|LNA)", y$samples$group)] <- "blue" # LNA
 col[grepl("(siRNA|Ambion|Dharamaco)", y$samples$group)] <- "red" # siRNA
 plotMDS(mds.out, col=col, pch=16)
@@ -696,6 +757,144 @@ Testing for DE between H19 guide 2 and negative guide 2.
 ```{r}
 fname <- "CRISPRi_H19.2_vs_negguide2"
 con <- makeContrasts(gH19guide2.20160713 - gNegativeguide2.20160713, levels=design)
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+## Contrasts for CRISPRi (heterogeneous)
+
+### Testing for the effect of dCas9 in heterogeneous populations
+
+Comparing HeLa cells with those that have been transduced and selected for dCas9-KRAB expression in a heterogeneous population.
+
+```{r}
+fname <- "CRISPRi_het_BFP_vs_cells"
+con <- makeContrasts(gHelaBFPhetero.20161212 - gHelahetero.20161212, levels=design)
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+### Testing for the effect of control guide transfection
+
+Testing for DE after transfection of negative control to heterogeneous populations.
+
+```{r}
+fname <- "CRISPRi_het_Nc.1_vs_BFP"
+con <- makeContrasts(gHelaNc1hetero.20161212 - gHelaBFPhetero.20161212, levels=design)
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+Now for the other guide.
+
+```{r}
+fname <- "CRISPRi_het_Nc.2_vs_BFP"
+con <- makeContrasts(gHelaNc2hetero.20161212 - gHelaBFPhetero.20161212, levels=design)
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+Testing for DE between the negative guides.
+
+```{r}
+fname <- "CRISPRi_het_Nc.1_vs_Nc.2"
+con <- makeContrasts(gHelaNc1hetero.20161212 - gHelaNc2hetero.20161212, levels=design)
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+### Testing for the effect of 289 knockdown
+
+Comparing to the first negative guide.
+
+```{r}
+fname <- "CRISPRi_het_289.9_vs_Nc.1"
+con <- makeContrasts(gHela289g9hetero.20161212 - gHelaNc1hetero.20161212, levels=design)
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+Comparing to the second negative guide.
+
+```{r}
+fname <- "CRISPRi_het_289.9_vs_Nc.2"
+con <- makeContrasts(gHela289g9hetero.20161212 - gHelaNc2hetero.20161212, levels=design)
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+### Testing for the effect of H19 knockdown
+
+Comparing to the first negative guide.
+
+```{r}
+fname <- "CRISPRi_het_H19_vs_Nc.1"
+con <- makeContrasts(gHelaH19hetero.20161212 - gHelaNc1hetero.20161212, levels=design)
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+Comparing to the second negative guide.
+
+```{r}
+fname <- "CRISPRi_het_H19_vs_Nc.2"
+con <- makeContrasts(gHelaH19hetero.20161212 - gHelaNc2hetero.20161212, levels=design)
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))

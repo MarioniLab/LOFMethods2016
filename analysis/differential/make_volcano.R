@@ -22,8 +22,9 @@ for (mode in c("results_de", "results_lfc")) {
     siRNA <- read.table(file.path(mode, "combined_siRNA_289.txt"), header=TRUE, stringsAsFactors=FALSE)
     LNA <- read.table(file.path(mode, "combined_LNA_289.txt"), header=TRUE, stringsAsFactors=FALSE)
     CRISPRi <- read.table(file.path(mode, "combined_CRISPRi_289.txt"), header=TRUE, stringsAsFactors=FALSE)
+    CRISPRi.het <- read.table(file.path(mode, "combined_CRISPRi_het_289.txt"), header=TRUE, stringsAsFactors=FALSE)
     
-    combined.p <- c(siRNA$P.Value, LNA$P.Value, CRISPRi$P.Value)
+    combined.p <- c(siRNA$P.Value, LNA$P.Value, CRISPRi$P.Value, CRISPRi.het$P.Value)
     is.sig <- p.adjust(combined.p, method="BH") <= 0.05
     threshold <- max(combined.p[is.sig])
 
@@ -51,20 +52,27 @@ for (mode in c("results_de", "results_lfc")) {
                     which(CRISPRi$ENSEMBL=="ENSG00000234771"), threshold=threshold, ylim=ylim)
         dev.off()
 
-        H19 <- read.table(file.path(mode, "combined_CRISPRi_H19.txt"), header=TRUE, stringsAsFactors=FALSE)
-        pdf(sprintf("pics/CRISPRi_volcano_H19_%s.pdf", extra))
-        makeVolcano(H19$P.Value, (H19$Versus1.logFC + H19$Versus2.logFC)/2,
-                    which(H19$ENSEMBL=="ENSG00000130600"), threshold=threshold, ylim=ylim)
+        pdf(sprintf("pics/CRISPRi_het_volcano_289_%s.pdf", extra))
+        makeVolcano(CRISPRi.het$P.Value, (CRISPRi.het$Versus1.logFC + CRISPRi.het$Versus2.logFC)/2,
+                    which(CRISPRi.het$ENSEMBL=="ENSG00000234771"), threshold=threshold, ylim=ylim)
         dev.off()
+
+#        H19 <- read.table(file.path(mode, "combined_CRISPRi_H19.txt"), header=TRUE, stringsAsFactors=FALSE)
+#        pdf(sprintf("pics/CRISPRi_volcano_H19_%s.pdf", extra))
+#        makeVolcano(H19$P.Value, (H19$Versus1.logFC + H19$Versus2.logFC)/2,
+#                    which(H19$ENSEMBL=="ENSG00000130600"), threshold=threshold, ylim=ylim)
+#        dev.off()
     }
 
     # Also comparing controls.
     LNAcon <- read.table(file.path(mode, "LNA_controlB_vs_trans.txt"), header=TRUE, stringsAsFactors=FALSE)
     CRISPRicon <- read.table(file.path(mode, "CRISPRi_clone2_vs_cells_I.txt"), header=TRUE, stringsAsFactors=FALSE)
+    CRISPRi.hetcon <- read.table(file.path(mode, "CRISPRi_het_BFP_vs_cells.txt"), header=TRUE, stringsAsFactors=FALSE)
     flowthresh <- readRDS(sprintf("threshold_%s.rds", nextra))
 
     lna.sig <- LNAcon$P.Value <= flowthresh
     crispri.sig <- CRISPRicon$P.Value <= flowthresh
+    crispri.het.sig <- CRISPRi.hetcon$P.Value <= flowthresh
 
     pdf(sprintf("pics/LNA_volcano_controlB_vs_trans_%s.pdf", nextra))
     makeVolcano(LNAcon$P.Value, LNAcon$logFC, lna.sig, threshold=flowthresh, xlim=c(-10, 10), chosen.pch=1.5, chosen.col="dodgerblue")
@@ -77,6 +85,13 @@ for (mode in c("results_de", "results_lfc")) {
     abline(v=-3, col="black", lwd=3, lty=3)
     abline(v=3, col="black", lwd=3, lty=3)
     dev.off()
+
+    pdf(sprintf("pics/CRISPRi_het_volcano_BFP_vs_cells.pdf", nextra))
+    makeVolcano(CRISPRi.hetcon$P.Value, CRISPRi.hetcon$logFC, crispri.het.sig, threshold=flowthresh, xlim=c(-10, 10), chosen.pch=1.5, chosen.col="violet")
+    abline(v=-3, col="black", lwd=3, lty=3)
+    abline(v=3, col="black", lwd=3, lty=3)
+    dev.off()
+
 
 }
 

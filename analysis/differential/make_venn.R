@@ -63,30 +63,49 @@ for (mode in c("results_de", "results_lfc")) {
 
         require(gplots)
         pdf("pics/heat_clone_common.pdf")
-        heatmap.2(chosen.adjc, col=bluered, symm=TRUE, dendrogram="none", Colv=FALSE, trace="none", margins=c(5, 8))
+        heatmap.2(chosen.adjc, col=bluered, symm=TRUE, dendrogram="none", Colv=FALSE, Rowv=FALSE,
+                  trace="none", margins=c(5, 8), breaks=seq(-5, 5, length.out=21))
+        dev.off()
+
+        # Cbinding with log-fold changes for the heterogeneous vs Cells.
+        is.het.lib <- grepl("20161212", y$samples$group) & (grepl("Helahetero", y$samples$group) | grepl("HelaBFPhetero", y$samples$group))
+        het.chosen.adjc <- adjc[my, is.het.lib]
+        het.full.names <- sub("\\..*", "", y$samples$group[is.het.lib])
+        het.full.names <- sub("Hela(Cas9)?", "", het.full.names)
+        het.full.names <- sub("([^ ])([0-9])", "\\1 \\2", het.full.names)
+        colnames(het.chosen.adjc) <- het.full.names
+        rownames(het.chosen.adjc) <- my.names
+        
+        o <- order(het.full.names)
+        het.chosen.adjc <- het.chosen.adjc[,o]
+        het.chosen.adjc <- het.chosen.adjc - rowMeans(het.chosen.adjc[,colnames(het.chosen.adjc)=="hetero"]) 
+
+        pdf("pics/heat_het_common.pdf")
+        heatmap.2(het.chosen.adjc, col=bluered, symm=TRUE, dendrogram="none", Colv=FALSE, Rowv=FALSE,
+                  trace="none", margins=c(5, 8), breaks=seq(-5, 5, length.out=21))
         dev.off()
     }
 
     ####################################################
     # Make a Venn diagram of all techniques against each other.
 
-    siRNA <- read.table(file.path(mode, "combined_siRNA_289.txt"), header=TRUE, stringsAsFactors=FALSE)
+    CRISPRi.het <- read.table(file.path(mode, "combined_CRISPRi_289_het.txt"), header=TRUE, stringsAsFactors=FALSE)
     LNA <- read.table(file.path(mode, "combined_LNA_289.txt"), header=TRUE, stringsAsFactors=FALSE)
     CRISPRi <- read.table(file.path(mode, "combined_CRISPRi_289.txt"), header=TRUE, stringsAsFactors=FALSE)
 
     common.order <- sort(LNA$ENSEMBL)
-    ms <- match(common.order, siRNA$ENSEMBL)
+    ms <- match(common.order, CRISPRi.het$ENSEMBL)
     ml <- match(common.order, LNA$ENSEMBL)
     mc <- match(common.order, CRISPRi$ENSEMBL)
 
-    siRNA <- siRNA[ms,]
+    CRISPRi.het <- CRISPRi.het[ms,]
     LNA <- LNA[ml,]
     CRISPRi <- CRISPRi[mc,]
 
-    combined.p <- c(siRNA$P.Value, LNA$P.Value, CRISPRi$P.Value)
+    combined.p <- c(CRISPRi.het$P.Value, LNA$P.Value, CRISPRi$P.Value)
     is.sig <- p.adjust(combined.p, method="BH") <= 0.05
-    all.choices <- matrix(is.sig, nrow=nrow(siRNA))
-    colnames(all.choices) <- c("siRNA", "LNA", "CRISPRi")
+    all.choices <- matrix(is.sig, nrow=nrow(CRISPRi.het))
+    colnames(all.choices) <- c("CRISPRi.het", "LNA", "CRISPRi")
 
     library(limma)
     pdf(sprintf("pics/venn_289_%s.pdf", extra))

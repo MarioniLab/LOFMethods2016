@@ -48,26 +48,25 @@ for (mode in c("results_de", "results_lfc")) {
                 data.frame(guide1_het[,c("ENSEMBL", "SYMBOL")], Versus1.logFC=guide1_het$logFC, Versus2.logFC=guide2_het$logFC,
                            P.Value=pval, adj.P.Val=p.adjust(pval, method="BH"))[o,])
 
-    h19v1 <- read.table(file.path(mode, "CRISPRi_H19.2_vs_negguide1.txt"), header=TRUE, stringsAsFactors=FALSE)
-    h19v2 <- read.table(file.path(mode, "CRISPRi_H19.2_vs_negguide2.txt"), header=TRUE, stringsAsFactors=FALSE)
-    m <- match(h19v1$ENSEMBL, h19v2$ENSEMBL)
-    h19v2 <- h19v2[m,]
-    pval <- pmax(h19v1$P.Value, h19v2$P.Value)
-    o <- order(pval)
-    write.table(file=file.path(mode, "combined_CRISPRi_H19.txt"), row.names=FALSE, sep="\t", quote=FALSE,
-                data.frame(h19v1[,c("ENSEMBL", "SYMBOL")], Versus1.logFC=h19v1$logFC, Versus2.logFC=h19v2$logFC,
-                           P.Value=pval, adj.P.Val=p.adjust(pval, method="BH"))[o,])
-
-    h19v1_het <- read.table(file.path(mode, "CRISPRi_het_H19_vs_Nc.1.txt"), header=TRUE, stringsAsFactors=FALSE)
-    h19v2_het <- read.table(file.path(mode, "CRISPRi_het_H19_vs_Nc.2.txt"), header=TRUE, stringsAsFactors=FALSE)
-    m <- match(h19v1_het$ENSEMBL, h19v2_het$ENSEMBL)
-    h19v2_het <- h19v2_het[m,]
-    pval <- pmax(h19v1_het$P.Value, h19v2_het$P.Value)
-    o <- order(pval)
-    write.table(file=file.path(mode, "combined_CRISPRi_het_H19.txt"), row.names=FALSE, sep="\t", quote=FALSE,
-                data.frame(h19v1_het[,c("ENSEMBL", "SYMBOL")], Versus1.logFC=h19v1_het$logFC, Versus2.logFC=h19v2_het$logFC,
-                           P.Value=pval, adj.P.Val=p.adjust(pval, method="BH"))[o,])
-
+#    h19v1 <- read.table(file.path(mode, "CRISPRi_H19.2_vs_negguide1.txt"), header=TRUE, stringsAsFactors=FALSE)
+#    h19v2 <- read.table(file.path(mode, "CRISPRi_H19.2_vs_negguide2.txt"), header=TRUE, stringsAsFactors=FALSE)
+#    m <- match(h19v1$ENSEMBL, h19v2$ENSEMBL)
+#    h19v2 <- h19v2[m,]
+#    pval <- pmax(h19v1$P.Value, h19v2$P.Value)
+#    o <- order(pval)
+#    write.table(file=file.path(mode, "combined_CRISPRi_H19.txt"), row.names=FALSE, sep="\t", quote=FALSE,
+#                data.frame(h19v1[,c("ENSEMBL", "SYMBOL")], Versus1.logFC=h19v1$logFC, Versus2.logFC=h19v2$logFC,
+#                           P.Value=pval, adj.P.Val=p.adjust(pval, method="BH"))[o,])
+#
+#    h19v1_het <- read.table(file.path(mode, "CRISPRi_het_H19_vs_Nc.1.txt"), header=TRUE, stringsAsFactors=FALSE)
+#    h19v2_het <- read.table(file.path(mode, "CRISPRi_het_H19_vs_Nc.2.txt"), header=TRUE, stringsAsFactors=FALSE)
+#    m <- match(h19v1_het$ENSEMBL, h19v2_het$ENSEMBL)
+#    h19v2_het <- h19v2_het[m,]
+#    pval <- pmax(h19v1_het$P.Value, h19v2_het$P.Value)
+#    o <- order(pval)
+#    write.table(file=file.path(mode, "combined_CRISPRi_het_H19.txt"), row.names=FALSE, sep="\t", quote=FALSE,
+#                data.frame(h19v1_het[,c("ENSEMBL", "SYMBOL")], Versus1.logFC=h19v1_het$logFC, Versus2.logFC=h19v2_het$logFC,
+#                           P.Value=pval, adj.P.Val=p.adjust(pval, method="BH"))[o,])
 }
 
 

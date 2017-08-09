@@ -21,6 +21,8 @@ options(width=100)
 
 # Introduction
 
+## Primary data loading
+
 Loading in the counts, and ignoring the first column of gene lengths.
 
 ```{r}
@@ -47,6 +49,16 @@ m <- match(colnames(all.counts), paste0("X", metadata$Batch, ".", metadata$Libra
 stopifnot(all(!is.na(m)))
 metadata <- metadata[m,]
 ```
+
+Removing the unnecessary H19 samples.
+
+```{r}
+is.h19 <- grepl("H19", metadata$Sample)
+metadata <- metadata[!is.h19,]
+all.counts <- all.counts[,!is.h19]
+```
+
+## Heterogeneous data loading
 
 Also loading the heterogeneous data.
 
@@ -94,6 +106,8 @@ all.counts2 <- all.counts2[,keep]
 metadata2 <- data.frame(Batch="20161212", Library=tolower(metadata2$DO.numbers[keep]),
     Sample=groupings2[keep], Experiment=repnum2[keep])
 ```
+
+## Constructing the combined data set
 
 Combining the two tables together.
 
@@ -158,11 +172,16 @@ par(mar=c(12.1,4.1,4.1,2.1))
 plot(as.integer(g), adjc["ENSG00000234771",], xaxt="n", ylab="log-CPM", main="289", xlab="")
 axis(1, at=seq_len(nlevels(g)), levels(g), las=2)
 par(mar=c(12.1,4.1,4.1,2.1))
-plot(as.integer(g), adjc["ENSG00000130600",], xaxt="n", ylab="log-CPM", main="H19", xlab="")
-axis(1, at=seq_len(nlevels(g)), levels(g), las=2)
-par(mar=c(12.1,4.1,4.1,2.1))
 plot(as.integer(g), adjc["Cas9",], xaxt="n", ylab="log-CPM", main="Cas9", xlab="")
 axis(1, at=seq_len(nlevels(g)), levels(g), las=2)
+```
+
+We save these to file for plotting.
+
+```{r}
+to.save <- data.frame(Group=g, t(adjc[c("ENSG00000234771", "Cas9"),]))
+to.save <- to.save[order(to.save$Group),]
+write.table(file="key_exprs.tsv", to.save, sep="\t", quote=FALSE, col.names=NA)
 ```
 
 # Filtering, normalization and annotation
@@ -197,10 +216,14 @@ rownames(y) <- NULL
 
 Setting up a design matrix.
 We use a one-way layout where each group gets its own coefficient in the matrix.
+We also add blocking factors for the various experimental terms (the first factor for each batch needs to be removed to achieve full rank).
 
 ```{r}
+block <- paste0(metadata$Batch, metadata$Experiment)
 g <- factor(y$samples$group)
-design <- model.matrix(~0 + g)
+design <- model.matrix(~0 + g + block)
+design <- design[,! colnames(design) %in% c("block20160713bexp6", 
+    "block20160713exp1", "block20160907exp1", "block20161212exp2")]
 dim(design)
 ```
 
@@ -225,14 +248,6 @@ Also checking the negative binomial dispersion estimates from `edgeR`.
 y <- estimateDisp(y, design)
 summary(y$trended)
 plotBCV(y)
-```
-
-Also checking out the correlations with experiment number within each batch.
-This seems minor so we'll keep it simple and we won't bother with modelling it.
-
-```{r}
-dc <- duplicateCorrelation(v.all, design=design, block=metadata$Experiment)
-dc$consensus
 ```
 
 # Testing for differential expression
@@ -478,7 +493,6 @@ Repeating with a log-fold change threshold of 0.5.
 ```{r, ref.label="progenitor"}
 ```
 
-
 ## Contrasts for CRISPRi (clonal)
 
 ### Effect of dCas9-KRAB expression and cloning
@@ -699,9 +713,10 @@ Repeating with a log-fold change threshold of 0.5.
 ```{r, ref.label="progenitor"}
 ```
 
+<!--
+
 ### Effect of actual H19 knockdown plus any off-target effects 
 
-<!--
 
 Testing for DE between H19 guide 1 and negative guide 1.
 
@@ -732,13 +747,12 @@ WRITE(fit2, fname)
 
 Repeating with a log-fold change threshold of 0.5.
 
-```{r, ref.label="progenitor", eval=FALSE}
+```{r, eval=FALSE, ref.label="progenitor", eval=FALSE}
 ```
--->
 
 Testing for DE between H19 guide 2 and negative guide 1.
 
-```{r}
+```{r, eval=FALSE}
 fname <- "CRISPRi_H19.2_vs_negguide1"
 con <- makeContrasts(gH19guide2.20160713 - gNegativeguide1.20160713, levels=design)
 fit2 <- contrasts.fit(fit, con)
@@ -749,12 +763,12 @@ WRITE(fit2, fname)
 
 Repeating with a log-fold change threshold of 0.5.
 
-```{r, ref.label="progenitor"}
+```{r, eval=FALSE, ref.label="progenitor"}
 ```
 
 Testing for DE between H19 guide 2 and negative guide 2.
 
-```{r}
+```{r, eval=FALSE}
 fname <- "CRISPRi_H19.2_vs_negguide2"
 con <- makeContrasts(gH19guide2.20160713 - gNegativeguide2.20160713, levels=design)
 fit2 <- contrasts.fit(fit, con)
@@ -765,8 +779,9 @@ WRITE(fit2, fname)
 
 Repeating with a log-fold change threshold of 0.5.
 
-```{r, ref.label="progenitor"}
+```{r, eval=FALSE, ref.label="progenitor"}
 ```
+-->
 
 ## Contrasts for CRISPRi (heterogeneous)
 

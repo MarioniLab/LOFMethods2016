@@ -64,7 +64,7 @@ for (mode in c("results_de", "results_lfc")) {
         require(gplots)
         pdf("pics/heat_clone_common.pdf")
         heatmap.2(chosen.adjc, col=bluered, symm=TRUE, dendrogram="none", Colv=FALSE, Rowv=FALSE,
-                  trace="none", margins=c(5, 8), breaks=seq(-5, 5, length.out=21))
+                  trace="none", margins=c(5, 8), breaks=seq(-5, 5, length.out=21),  symkey=FALSE)
         dev.off()
 
         # Cbinding with log-fold changes for the heterogeneous vs Cells.
@@ -82,14 +82,14 @@ for (mode in c("results_de", "results_lfc")) {
 
         pdf("pics/heat_het_common.pdf")
         heatmap.2(het.chosen.adjc, col=bluered, symm=TRUE, dendrogram="none", Colv=FALSE, Rowv=FALSE,
-                  trace="none", margins=c(5, 8), breaks=seq(-5, 5, length.out=21))
+                  trace="none", margins=c(5, 8), breaks=seq(-5, 5, length.out=21), symkey=FALSE)
         dev.off()
     }
 
     ####################################################
     # Make a Venn diagram of all techniques against each other.
 
-    CRISPRi.het <- read.table(file.path(mode, "combined_CRISPRi_289_het.txt"), header=TRUE, stringsAsFactors=FALSE)
+    CRISPRi.het <- read.table(file.path(mode, "combined_CRISPRi_het_289.txt"), header=TRUE, stringsAsFactors=FALSE)
     LNA <- read.table(file.path(mode, "combined_LNA_289.txt"), header=TRUE, stringsAsFactors=FALSE)
     CRISPRi <- read.table(file.path(mode, "combined_CRISPRi_289.txt"), header=TRUE, stringsAsFactors=FALSE)
 

@@ -1,88 +1,161 @@
+########################################################################################
+
+# First batch of data:
 firstlot <- read.table("../../real_20160208/analysis/sample_metadata.txt", header=TRUE, sep ="\t")
-secondlot <- read.csv("../../real_20160713/analysis/sample_metadata.csv")
-thirdlot <- read.csv("../../real_20160907/analysis/sample_metadata.csv")
-
 firstlot <- firstlot[,c(1,7)]
-secondlot <- secondlot[,1:2]
-secondlot[,1] <- tolower(secondlot[,1])
-thirdlot[,1] <- tolower(thirdlot[,1])
 
-# Adding batch dates.
-firstlot <- cbind("20160208", firstlot)
-secondlot <- cbind("20160713", secondlot)
-thirdlot <- cbind("20160907", thirdlot)
+lib.num <- firstlot$Library
+exp.num <- sub(".*exp", "\\1", firstlot$Individual)
+condition <- sub("[ _-]*exp.*", "", firstlot$Individual)
+cleaned.first <- data.frame(Library=lib.num, Condition=condition, Experiment=exp.num) 
 
-# Getting rid of 'LNAold' specifier at the end of the third lot's sample names.
-thirdlot <- thirdlot[grep("LNAold", thirdlot[,3]),]
-thirdlot[,3] <- sub("_LNAold", "", thirdlot[,3])
+# Discarding unnecessary libraries.
+discard <- grepl("^271", condition) | grepl("^3417", condition) |  # Unnecessary libraries
+           grepl("289 LNA-1", condition) | # LNA with poor knockdown.
+           firstlot$Library=="do8276" # Failed sequencing
 
-# Merging lots.
-colnames(firstlot) <- colnames(secondlot) <- colnames(thirdlot) <- c("Batch", "Library", "Sample")
-combined <- rbind(firstlot, secondlot, thirdlot)
+cleaned.first <- cleaned.first[!discard,] 
+rownames(cleaned.first) <- NULL
+cleaned.first$Batch <- "20160208"
 
-# For the second lot, clones prepared in a separate batch from the H19 samples.
-combined$Batch <- as.character(combined$Batch)
-is.batch2 <- combined$Batch=="20160713" & grepl("exp[6-9]", combined$Sample) 
-combined$Batch[is.batch2] <- paste0(combined$Batch[is.batch2], "b")
+# Setting LOF mode:
+LOF <- character(nrow(cleaned.first))
+LOF[grepl("guide", cleaned.first$Condition) | 
+    grepl("cas9", cleaned.first$Condition)] <- "CRISPRi"
+LOF[grepl("Ambion", cleaned.first$Condition) |
+    grepl("Dharamaco", cleaned.first$Condition) | 
+    grepl("siRNA", cleaned.first$Condition)] <- "RNAi"
+LOF[cleaned.first$Condition=="neg control B" |
+    cleaned.first$Condition=="289 LNA2"] <- "LNA"
+LOF[cleaned.first$Condition=="cells"] <- "none"
 
-# Cleaning up names and groupings.
-exp.num <- sub(".*(exp[0-9]b?)$", "\\1", combined$Sample)
-groupings <- sub("exp[0-9]b?$", "", combined$Sample)
-groupings <- gsub("[ _-]", "", groupings)
+# Setting genotype:
+genotype <- rep("wild-type", nrow(cleaned.first))
+genotype[grepl("guide", cleaned.first$Condition) | 
+         grepl("cas9", cleaned.first$Condition)] <- "dCas9-KRAB clone 2"
 
-# Discarding libraries that we don't want.
-discard <- grepl("271", groupings) | grepl("3417", groupings) | grepl("centrosome", groupings) |  # Unnecessary libraries
-           grepl("289LNA1", groupings) | # LNA with poor knockdown.
-           (combined$Library=="do8276" & combined$Batch=="20160208") | (combined$Library=="do9614" & combined$Batch=="20160907") | # Failed due to sequencing
-           (grepl("(LNA|Negcontrol*|transfection|Helacells)", groupings) & combined$Batch=="20160713") | # Failed because of Cas9 contamination
-###           (combined$Library %in% c("do9295", "do9300") & combined$Batch =="20160713") | # Inconsistent with other control clones, for some reason.
-           grepl("H19guide1", groupings) # CRISPRi with poor knockdown.
+# Setting treatment compound:
+compound <- character(nrow(cleaned.first))
 
-combined$Sample <- groupings
-combined <- cbind(combined, Experiment=exp.num)
-write.table(file="metadata.tsv", combined[!discard,], row.names=FALSE, sep="\t", quote=FALSE)
+compound[cleaned.first$Condition=="Con si Ambion"] <- "Ambion control"
+compound[cleaned.first$Condition=="Control Dharamaco"] <- "Dharmacon control"
+compound[cleaned.first$Condition=="289 siRNA"] <- "289 siRNA"
+ 
+compound[cleaned.first$Condition=="289 LNA2"] <- "289 LNA"
+compound[cleaned.first$Condition=="neg control B"] <- "negative control B"
+
+compound[cleaned.first$Condition=="289 guide 1"] <- "289 guide 1"
+compound[cleaned.first$Condition=="289 guide1"] <- "289 guide 1"
+compound[cleaned.first$Condition=="289 guide 9"] <- "289 guide 9"
+compound[cleaned.first$Condition=="289 guide9"] <- "289 guide 9"
+compound[cleaned.first$Condition=="Negative guide 2"] <- "negative control guide 2"
+
+compound[cleaned.first$Condition %in% c("Hela cas9 clone 2", "cells")] <- "none"
+
+# Creating a new group.
+new.group <- paste0(LOF, ".", genotype, ".", compound, ".", cleaned.first$Batch)
+new.group <- gsub(" ", "_", new.group)
+cleaned.first$Condition <- new.group
+cleaned.first$LOF <- LOF
+cleaned.first$Genotype <- genotype 
+cleaned.first$Compound <- compound
 
 ########################################################################################
-# Print out important bits from the metadata, regarding genotype and treatment.
 
-stuff <- read.table("metadata.tsv", header=TRUE, stringsAsFactors=FALSE)
+# Second batch of data:
+secondlot <- read.csv("../../real_20160713/analysis/sample_metadata.csv")
+secondlot <- secondlot[,1:2]
+secondlot[,1] <- tolower(secondlot[,1])
 
-LOF.method <- character(nrow(stuff))
-LOF.method["ConsiAmbion"==stuff$Sample | "ControlDharamaco"==stuff$Sample | "289siRNA"==stuff$Sample] <- "RNAi"
-LOF.method[grepl("289LNA", stuff$Sample) | "negcontrolB"==stuff$Sample | grepl("Neg[AB]", stuff$Sample) | "CellsMax"==stuff$Sample] <- "LNA"
-LOF.method[grepl("289guide", stuff$Sample) | grepl("Negativeguide2", stuff$Sample) | grepl("Hela[Cc]as9clone", stuff$Sample) |
-           grepl("Negativeguide1", stuff$Sample) | grepl("H19guide2", stuff$Sample)] <- "CRISPRi"
-LOF.method["cells"==stuff$Sample | "Helacells"==stuff$Sample | "Cells"==stuff$Sample] <- "None"
+lib.num <- secondlot$DO_name
+exp.num <- sub(".*exp", "\\1", secondlot$sample_name)
+condition <- sub("_*exp.*", "", secondlot$sample_name)
+cleaned.second <- data.frame(Library=lib.num, Condition=condition, Experiment=exp.num) 
 
-genotype <- rep("WT", nrow(stuff))
-genotype[grepl("289guide", stuff$Sample) | grepl("Negativeguide2", stuff$Sample) | grepl("Hela[Cc]as9clone2", stuff$Sample) |
-         grepl("Negativeguide1", stuff$Sample) | grepl("H19guide2", stuff$Sample)] <- "dCas9-KRAB clone 2"
-genotype[stuff$Sample == "HelaCas9clone1"] <- "dCas9-KRAB clone 1"
-genotype[stuff$Sample == "HelaCas9clone4"] <- "dCas9-KRAB clone 4"
+# Sub batch within a sequencing batch.
+first.sub.batch <- exp.num %in% as.character(6:9)
+cleaned.second$Batch <- ifelse(first.sub.batch, "20160713", "20160713b") 
 
-compound <- character(nrow(stuff))
-compound[stuff$Sample=="ConsiAmbion"] <- "Ambion control"
-compound[stuff$Sample=="ControlDharamaco"] <- "Dharmacon control"
-compound[stuff$Sample=="289siRNA"] <- "289 siRNA"
-compound[stuff$Sample=="289LNA2"] <- "289 LNA"
-compound[stuff$Sample=="negcontrolB"] <- compound[stuff$Sample=="NegB"] <- "Negative control B"
-compound[stuff$Sample=="NegA"] <- "Negative control A"
-compound[stuff$Sample=="CellsMax"] <- "Transfection control"
-compound[stuff$Sample=="289guide1"] <- "289 guide 1"
-compound[stuff$Sample=="289guide9"] <- "289 guide 9"
-compound[stuff$Sample=="Negativeguide2"] <- "Negative control guide 2"
-compound[stuff$Sample=="Negativeguide1"] <- "Negative control guide 1"
-compound[stuff$Sample=="H19guide2"] <- "H19 guide 2"
-compound[stuff$Sample %in% c("HelaCas9clone1", "HelaCas9clone4", "HelaCas9clone2", "Helacas9clone2", "Cells", "cells", "Helacells")] <- "None"
+# Discarding unnecessary libraries:
+discard <- grepl("centrosome", condition) |  # Unnecessary libraries
+           grepl("(LNA|Neg_control*|transfection)", condition) | (condition=="Hela_cells" & !first.sub.batch) | # Failed because of Cas9 contamination
+           grepl("H19guide1", condition) # CRISPRi with poor knockdown.
+cleaned.second <- cleaned.second[!discard,]
 
-seq.date <- sub("b$", "", stuff$Batch)
-batch.id <- as.integer(factor(stuff$Batch))
-replicate.num <- sub("^exp", "", stuff$Experiment)
-replicate.num[replicate.num=="4b"] <- "5"
+# Setting LOF mode:
+LOF <- character(nrow(cleaned.second))
+LOF[grepl("Cas9", cleaned.second$Condition) | grepl("guide", cleaned.second$Condition)] <- "CRISPRi"
+LOF[grepl("Neg_control", cleaned.second$Condition)] <- "LNA"
+LOF["Hela_cells"==cleaned.second$Condition] <- "none"
 
-write.csv(file="annotations.csv", 
-          data.frame(Library=stuff$Library, Sample=stuff$Sample, LOF=LOF.method, 
-                     Genotype=genotype, Compound=compound, Date=seq.date, 
-                     Batch=batch.id, Replicate=replicate.num), row.names=FALSE, quote=FALSE)
+# Setting genotype:
+genotype <- rep("wild-type", nrow(cleaned.second))
+genotype[grepl("guide", cleaned.second$Condition) | 
+         cleaned.second$Condition=="HelaCas9_clone2"] <- "dCas9-KRAB clone 2"
+genotype[cleaned.second$Condition == "HelaCas9_clone1"] <- "dCas9-KRAB clone 1"
+genotype[cleaned.second$Condition == "HelaCas9_clone4"] <- "dCas9-KRAB clone 4"
 
+# Setting compound:
+compound <- character(nrow(cleaned.second))
+
+compound[cleaned.second$Condition=="Neg_controlA"] <- "negative control A"
+compound[cleaned.second$Condition=="Neg_controlB"] <- "negative control B"
+
+compound[cleaned.second$Condition=="Negative_guide2"] <- "negative control guide 2"
+compound[cleaned.second$Condition=="Negative_guide1"] <- "negative control guide 1"
+compound[cleaned.second$Condition=="H19guide2"] <- "H19 guide 2"
+
+compound[grepl("clone", cleaned.second$Condition) | cleaned.second$Condition=="Hela_cells"] <- "none"
+
+# Creating a new group.
+new.group <- paste0(LOF, ".", genotype, ".", compound, ".", cleaned.second$Batch)
+new.group <- gsub(" ", "_", new.group)
+cleaned.second$Condition <- new.group
+cleaned.second$LOF <- LOF
+cleaned.second$Genotype <- genotype 
+cleaned.second$Compound <- compound
+
+########################################################################################
+
+# Third batch of data:
+thirdlot <- read.csv("../../real_20160907/analysis/sample_metadata.csv")
+thirdlot[,1] <- tolower(thirdlot[,1])
+
+lib.num <- thirdlot$Library
+exp.num <- sub("_LNAold", "", sub(".*exp", "\\1", thirdlot$Sample))
+condition <- sub("_*exp.*", "", thirdlot$Sample)
+cleaned.third <- data.frame(Library=lib.num, Condition=condition, Experiment=exp.num) 
+
+# Discarding unnecessary libraries:
+discard <- thirdlot$Library=="do9614" | # Failed due to sequencing
+           !grepl("LNAold", thirdlot$Sample) # only looking at the samples involved in LNA.         
+cleaned.third <- cleaned.third[!discard,]
+cleaned.third$Batch <- "20160907"
+
+# Setting LOF mode:
+LOF <- rep("LNA", nrow(cleaned.third))
+
+# Setting genotype:
+genotype <- rep("wild-type", nrow(cleaned.third))
+
+# Setting compound:
+compound <- character(nrow(cleaned.third))
+compound[cleaned.third$Condition=="Cells_Max"] <- "transfection"
+compound[cleaned.third$Condition=="NegA"] <- "negative control A"
+compound[cleaned.third$Condition=="NegB"] <- "negative control B"
+compound[cleaned.third$Condition=="Cells"] <- "none"
+
+# Creating a new group.
+new.group <- paste0(LOF, ".", genotype, ".", compound, ".", cleaned.third$Batch)
+new.group <- gsub(" ", "_", new.group)
+cleaned.third$Condition <- new.group
+cleaned.third$LOF <- LOF
+cleaned.third$Genotype <- genotype 
+cleaned.third$Compound <- compound
+
+########################################################################################
+
+# Merging lots.
+combined <- rbind(cleaned.first, cleaned.second, cleaned.third)
+write.table(file="metadata.tsv", combined, row.names=FALSE, sep="\t", quote=FALSE)
 

@@ -69,7 +69,7 @@ secondlot[,1] <- tolower(secondlot[,1])
 
 lib.num <- secondlot$DO_name
 exp.num <- sub(".*exp", "\\1", secondlot$sample_name)
-condition <- sub("_*exp.*", "", secondlot$sample_name)
+condition <- sub("_exp.*", "", secondlot$sample_name)
 cleaned.second <- data.frame(Library=lib.num, Condition=condition, Experiment=exp.num) 
 
 # Sub batch within a sequencing batch.
@@ -85,7 +85,6 @@ cleaned.second <- cleaned.second[!discard,]
 # Setting LOF mode:
 LOF <- character(nrow(cleaned.second))
 LOF[grepl("Cas9", cleaned.second$Condition) | grepl("guide", cleaned.second$Condition)] <- "CRISPRi"
-LOF[grepl("Neg_control", cleaned.second$Condition)] <- "LNA"
 LOF["Hela_cells"==cleaned.second$Condition] <- "none"
 
 # Setting genotype:
@@ -123,7 +122,7 @@ thirdlot[,1] <- tolower(thirdlot[,1])
 
 lib.num <- thirdlot$Library
 exp.num <- sub("_LNAold", "", sub(".*exp", "\\1", thirdlot$Sample))
-condition <- sub("_*exp.*", "", thirdlot$Sample)
+condition <- sub("_exp.*", "", thirdlot$Sample)
 cleaned.third <- data.frame(Library=lib.num, Condition=condition, Experiment=exp.num) 
 
 # Discarding unnecessary libraries:
@@ -134,6 +133,7 @@ cleaned.third$Batch <- "20160907"
 
 # Setting LOF mode:
 LOF <- rep("LNA", nrow(cleaned.third))
+LOF[cleaned.third$Condition=="Cells"] <- "none"
 
 # Setting genotype:
 genotype <- rep("wild-type", nrow(cleaned.third))
@@ -155,7 +155,50 @@ cleaned.third$Compound <- compound
 
 ########################################################################################
 
+# Fourth batch of data:
+fourthlot <- read.csv("../../real_20161212/analysis/metadata.csv", header=TRUE, stringsAsFactors=FALSE)
+fourthlot$DO.numbers <- tolower(fourthlot$DO.numbers)
+
+lib.num <- fourthlot$DO.numbers
+exp.num <- sub("_hetero", "", sub(".*exp", "\\1", fourthlot$Description))
+condition <- sub("_exp[^_]+", "", fourthlot$Description)
+cleaned.fourth <- data.frame(Library=lib.num, Condition=condition, Experiment=exp.num) 
+
+# Discarding unnecessary libraries:
+discard <- lib.num %in% c("do12613", "do12615") | # Failed sequencing
+           !grepl("hetero", condition) |
+           grepl("271", condition) # don't care about this one.
+cleaned.fourth <- cleaned.fourth[!discard,]
+cleaned.fourth$Batch <- "20161212"
+
+# Setting LOF mode:
+LOF <- rep("CRISPRi", nrow(cleaned.fourth))
+LOF[cleaned.fourth$Condition=="Hela_hetero"] <- "none"
+
+# Setting genotype:
+genotype <- rep("heterogenous dCas9-KRAB", nrow(cleaned.fourth))
+genotype[cleaned.fourth$Condition=="Hela_hetero"] <- "wild-type"
+
+# Setting compound:
+compound <- character(nrow(cleaned.fourth))
+compound[cleaned.fourth$Condition=="Hela_Nc1_hetero"] <- "negative control guide 1"
+compound[cleaned.fourth$Condition=="Hela_Nc2_hetero"] <- "negative control guide 2"
+compound[cleaned.fourth$Condition=="Hela_H19_hetero"] <- "H19 guide 2"
+compound[cleaned.fourth$Condition=="Hela_289_g1_hetero"] <- "289 guide 1"
+compound[cleaned.fourth$Condition=="Hela_289_g9_hetero"] <- "289 guide 9"
+compound[cleaned.fourth$Condition=="Hela_BFP_hetero" | cleaned.fourth$Condition=="Hela_hetero"] <- "none"
+
+# Creating a new group.
+new.group <- paste0(LOF, ".", genotype, ".", compound, ".", cleaned.fourth$Batch)
+new.group <- gsub(" ", "_", new.group)
+cleaned.fourth$Condition <- new.group
+cleaned.fourth$LOF <- LOF
+cleaned.fourth$Genotype <- genotype 
+cleaned.fourth$Compound <- compound
+
+########################################################################################
+
 # Merging lots.
-combined <- rbind(cleaned.first, cleaned.second, cleaned.third)
+combined <- rbind(cleaned.first, cleaned.second, cleaned.third, cleaned.fourth)
 write.table(file="metadata.tsv", combined, row.names=FALSE, sep="\t", quote=FALSE)
 

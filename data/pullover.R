@@ -4,7 +4,7 @@ unlink("bam", recursive=TRUE)
 dir.create("bam", showWarning=FALSE)
 unlink("fastq", recursive=TRUE)
 dir.create("fastq", showWarning=FALSE)
-to.pull <- read.table("analysis/metadata.tsv", header=TRUE, stringsAsFactor=FALSE)
+to.pull <- read.table("metadata.tsv", header=TRUE, stringsAsFactor=FALSE)
 
 for (i in seq_len(nrow(to.pull))) { 
     dir <- paste0("../real_", sub("[a-z]+$", "", to.pull$Batch[i]))

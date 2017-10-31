@@ -74,7 +74,7 @@ cleaned.second <- data.frame(Library=lib.num, Condition=condition, Experiment=ex
 
 # Sub batch within a sequencing batch.
 first.sub.batch <- exp.num %in% as.character(6:9)
-cleaned.second$Batch <- ifelse(first.sub.batch, "20160713", "20160713b") 
+cleaned.second$Batch <- ifelse(first.sub.batch, "20160713b", "20160713") 
 
 # Discarding unnecessary libraries:
 discard <- grepl("centrosome", condition) |  # Unnecessary libraries
@@ -127,7 +127,7 @@ cleaned.third <- data.frame(Library=lib.num, Condition=condition, Experiment=exp
 
 # Discarding unnecessary libraries:
 discard <- thirdlot$Library=="do9614" | # Failed due to sequencing
-           !grepl("LNAold", thirdlot$Sample) # only looking at the samples involved in LNA.         
+           !grepl("LNAold", thirdlot$Sample) # only looking at the samples involved in LNA.
 cleaned.third <- cleaned.third[!discard,]
 cleaned.third$Batch <- "20160907"
 
@@ -167,7 +167,8 @@ cleaned.fourth <- data.frame(Library=lib.num, Condition=condition, Experiment=ex
 # Discarding unnecessary libraries:
 discard <- lib.num %in% c("do12613", "do12615") | # Failed sequencing
            !grepl("hetero", condition) |
-           grepl("271", condition) # don't care about this one.
+           grepl("271", condition) | # don't care about this one.
+           grepl("289_g1", condition) # guide 1 failed.
 cleaned.fourth <- cleaned.fourth[!discard,]
 cleaned.fourth$Batch <- "20161212"
 

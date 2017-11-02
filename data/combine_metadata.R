@@ -93,7 +93,7 @@ genotype <- rep("wild type genotype", nrow(cleaned.second))
 genotype[grepl("guide", cleaned.second$Condition) | 
          cleaned.second$Condition=="HelaCas9_clone2"] <- "dCas9-KRAB clone 2"
 genotype[cleaned.second$Condition == "HelaCas9_clone1"] <- "dCas9-KRAB clone 1"
-genotype[cleaned.second$Condition == "HelaCas9_clone4"] <- "dCas9-KRAB clone 4"
+genotype[cleaned.second$Condition == "HelaCas9_clone4"] <- "dCas9-KRAB clone 3" # Renamed for simplicity.
 
 # Setting compound:
 compound <- character(nrow(cleaned.second))

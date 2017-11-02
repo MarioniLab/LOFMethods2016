@@ -10,18 +10,18 @@ for (mode in c("results_de", "results_lfc")) {
 
     clone2 <- read.table(file.path(mode, "CRISPRi_clone2_vs_cells_II.txt"), header=TRUE, stringsAsFactors=FALSE)
     clone1 <- read.table(file.path(mode, "CRISPRi_clone1_vs_cells.txt"), header=TRUE, stringsAsFactors=FALSE)
-    clone4 <- read.table(file.path(mode, "CRISPRi_clone4_vs_cells.txt"), header=TRUE, stringsAsFactors=FALSE)
+    clone3 <- read.table(file.path(mode, "CRISPRi_clone3_vs_cells.txt"), header=TRUE, stringsAsFactors=FALSE)
 
     common.order <- sort(clone2$ENSEMBL)
     m2 <- match(common.order, clone2$ENSEMBL)
     m1 <- match(common.order, clone1$ENSEMBL)
-    m4 <- match(common.order, clone4$ENSEMBL)
+    m4 <- match(common.order, clone3$ENSEMBL)
 
     clone2 <- clone2[m2,]
     clone1 <- clone1[m1,]
-    clone4 <- clone4[m4,]
+    clone3 <- clone3[m4,]
 
-    combined.p <- c(clone1$P.Value, clone2$P.Value, clone4$P.Value)
+    combined.p <- c(clone1$P.Value, clone2$P.Value, clone3$P.Value)
     is.sig <- p.adjust(combined.p, method="BH") <= 0.05
     all.choices <- matrix(is.sig, nrow=nrow(clone1))
     colnames(all.choices) <- c("Clone 1", "Clone 2", "Clone 4")
@@ -34,7 +34,7 @@ for (mode in c("results_de", "results_lfc")) {
     in.all <- rowSums(all.choices)==3L
     write.table(file=file.path(mode, "combined_clones.txt"), row.names=FALSE, sep="\t", quote=FALSE,
                 data.frame(clone2[,c("ENSEMBL", "SYMBOL")], 
-                           clone1.logFC=clone1$logFC, clone2.logFC=clone2$logFC, clone4.logFC=clone4$logFC, 
+                           clone1.logFC=clone1$logFC, clone2.logFC=clone2$logFC, clone3.logFC=clone3$logFC, 
                            adj.P.Val=ifelse(in.all, 0, 1)))
    
     if (extra=="lfc") {

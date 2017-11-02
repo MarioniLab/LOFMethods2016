@@ -55,9 +55,6 @@ compound[cleaned.first$Condition=="Negative guide 2"] <- "Negative control guide
 compound[cleaned.first$Condition %in% c("Hela cas9 clone 2", "cells")] <- "none"
 
 # Creating a new group.
-new.group <- paste0(LOF, ".", genotype, ".", compound, ".", cleaned.first$Batch)
-new.group <- gsub("[ -]", "_", new.group)
-cleaned.first$Condition <- new.group
 cleaned.first$LOF <- LOF
 cleaned.first$Genotype <- genotype 
 cleaned.first$Compound <- compound
@@ -105,9 +102,6 @@ compound[cleaned.second$Condition=="H19guide2"] <- "H19 guide 2"
 compound[grepl("clone", cleaned.second$Condition) | cleaned.second$Condition=="Hela_cells"] <- "none"
 
 # Creating a new group.
-new.group <- paste0(LOF, ".", genotype, ".", compound, ".", cleaned.second$Batch)
-new.group <- gsub("[ -]", "_", new.group)
-cleaned.second$Condition <- new.group
 cleaned.second$LOF <- LOF
 cleaned.second$Genotype <- genotype 
 cleaned.second$Compound <- compound
@@ -145,9 +139,6 @@ compound[cleaned.third$Condition=="NegB"] <- "Negative control B"
 compound[cleaned.third$Condition=="Cells"] <- "none"
 
 # Creating a new group.
-new.group <- paste0(LOF, ".", genotype, ".", compound, ".", cleaned.third$Batch)
-new.group <- gsub("[ -]", "_", new.group)
-cleaned.third$Condition <- new.group
 cleaned.third$LOF <- LOF
 cleaned.third$Genotype <- genotype 
 cleaned.third$Compound <- compound
@@ -165,8 +156,7 @@ condition <- sub("_exp[^_]+", "", fourthlot$Description)
 cleaned.fourth <- data.frame(Library=lib.num, Condition=condition, Experiment=exp.num) 
 
 # Discarding unnecessary libraries:
-discard <- lib.num %in% c("do12613", "do12615") | # Failed sequencing
-           !grepl("hetero", condition) |
+discard <- !grepl("hetero", condition) |
            grepl("271", condition) | # don't care about this one.
            grepl("289_g1", condition) # guide 1 failed.
 cleaned.fourth <- cleaned.fourth[!discard,]
@@ -191,9 +181,6 @@ compound[cleaned.fourth$Condition=="Hela_289_g9_hetero"] <- "289 guide 9"
 compound[cleaned.fourth$Condition=="Hela_BFP_hetero" | cleaned.fourth$Condition=="Hela_hetero"] <- "none"
 
 # Creating a new group.
-new.group <- paste0(LOF, ".", genotype, ".", compound, ".", cleaned.fourth$Batch)
-new.group <- gsub("[- ]", "_", new.group)
-cleaned.fourth$Condition <- new.group
 cleaned.fourth$LOF <- LOF
 cleaned.fourth$Genotype <- genotype 
 cleaned.fourth$Compound <- compound
@@ -203,5 +190,8 @@ cleaned.fourth$Compound <- compound
 # Merging lots.
 combined <- rbind(cleaned.first, cleaned.second, cleaned.third, cleaned.fourth)
 combined$Batch <- as.integer(factor(combined$Batch))
+new.group <- paste0(combined$LOF, ".", combined$Genotype, ".", combined$Compound, ".batch_", combined$Batch)
+new.group <- gsub("[- ]", "_", new.group)
+combined$Condition <- new.group
 write.table(file="metadata.tsv", combined, row.names=FALSE, sep="\t", quote=FALSE)
 

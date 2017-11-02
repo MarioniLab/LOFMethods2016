@@ -58,10 +58,11 @@ do
         # Pulling down the files, and renaming them to fit the "do" convention.
         for f in ${keep[@]}
         do
+            index=$(cat ${tmp_meta} | awk -F',' -v VAR=$f 'tolower($1) == VAR { print $3 }' | sed "s/-/_/")
+            
             collected=$(ls fastq/ | grep ${f} | wc -l)
             if [ ${collected} -eq 0 ]
             then
-                index=$(cat ${tmp_meta} | awk -F',' -v VAR=$f 'tolower($1) == VAR { print $3 }' | sed "s/-/_/")
                 scp hpcgate:/mnt/nas-srv002/jmlab/group_folders/lun01/Odom/lncRNA_mitosis/real_${b}/fastq/SLX-12829.${index}* fastq
                 
                 for x in $(ls fastq/SLX-12829.${index}*)

@@ -199,7 +199,7 @@ WRITE <- function(fit, fname, lfc=FALSE) {
         res <- topTable(fit, n=Inf, sort.by="p")
         fname <- file.path("results_de", fname)
     }
-    write.table(file=fname, res, row.names=FALSE, quote=FALSE, sep="\t")
+    write.table(file=fname, res, col.names=NA, quote=FALSE, sep="\t")
     head(res)
 }
 ```

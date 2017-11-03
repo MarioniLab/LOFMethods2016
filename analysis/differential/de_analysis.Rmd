@@ -26,7 +26,8 @@ options(width=100)
 Loading in the counts, and ignoring the first column of gene lengths.
 
 ```{r}
-all.counts <- read.table("../genic_counts.tsv", header=TRUE, row.names=1)
+all.counts <- read.table("../../data/genic_counts.tsv", header=TRUE, row.names=1, sep="\t",
+        colClasses=c(list("character", "integer"), as.list(rep("integer", 768))))
 lengths <- all.counts[,1]
 all.counts <- all.counts[,-1]
 dim(all.counts)
@@ -44,8 +45,8 @@ dim(all.counts)
 Loading in the experimental design, and checking that all the samples are present.
 
 ```{r}
-metadata <- read.table("../metadata.tsv", stringsAsFactors=FALSE, header=TRUE)
-m <- match(colnames(all.counts), paste0("X", metadata$Batch, ".", metadata$Library))
+metadata <- read.table("../../data/metadata.tsv", stringsAsFactors=FALSE, header=TRUE, sep="\t")
+m <- match(colnames(all.counts), metadata$Library)
 stopifnot(all(!is.na(m)))
 metadata <- metadata[m,]
 ```
@@ -53,68 +54,9 @@ metadata <- metadata[m,]
 Removing the unnecessary H19 samples.
 
 ```{r}
-is.h19 <- grepl("H19", metadata$Sample)
+is.h19 <- grepl("H19", metadata$Condition)
 metadata <- metadata[!is.h19,]
 all.counts <- all.counts[,!is.h19]
-```
-
-## Heterogeneous data loading
-
-Also loading the heterogeneous data.
-
-```{r}
-raw.counts2 <- read.table("../../../real_20161212/analysis/genic_counts.tsv", header=TRUE, row.names=1)
-lengths2 <- raw.counts2[,1]
-raw.counts2 <- raw.counts2[,-1]
-dim(raw.counts2)
-```
-
-We also need to sum together technical replicates.
-
-```{r, message=FALSE}
-techreps <- sub("\\.s_[0-9]*\\.r", "", colnames(raw.counts2))
-table(table(techreps))
-all.counts2 <- sumTechReps(raw.counts2, techreps)
-dim(all.counts2)
-```
-
-We examine the experimental design to determine which samples belong to which group.
-
-```{r}
-metadata2 <- read.csv("../../../real_20161212/analysis/metadata.csv", header=TRUE, stringsAsFactors=FALSE)
-m <- match(sub(".*(D[0-9]{3}_D[0-9]{3}).*", "\\1", colnames(all.counts2)), 
-           sub("-", "_", metadata2$Indexes))
-stopifnot(all(!is.na(m)))
-metadata2 <- metadata2[m,]
-groupings2 <- sub("_exp[0-9]b?", "", metadata2$Description)
-groupings2 <- gsub("[ _]", "", groupings2)
-repnum2 <- sub(".*_(exp[0-9]b?).*", "\\1", metadata2$Description)
-table(groupings2)
-```
-
-Keeping only the groups we're interested in.
-We don't use Guide 1 for 289 because it didn't give a good knockdown, and we omit two libraries with very low depths.
-
-```{r}
-keep <- groupings2 %in% c("Hela289g9hetero", "HelaBFPhetero", 
-    "HelaH19hetero", "Helahetero", "HelaNc1hetero", "HelaNc2hetero")
-discard <- c(40, 42)
-data.frame(Lost=cbind(summary(colSums(all.counts2)[discard])), 
-           Kept=cbind(summary(colSums(all.counts2)[-discard])))
-keep[discard] <- FALSE
-all.counts2 <- all.counts2[,keep]
-metadata2 <- data.frame(Batch="20161212", Library=tolower(metadata2$DO.numbers[keep]),
-    Sample=groupings2[keep], Experiment=repnum2[keep])
-```
-
-## Constructing the combined data set
-
-Combining the two tables together.
-
-```{r}
-stopifnot(identical(rownames(all.counts), rownames(all.counts2)))
-all.counts <- cbind(all.counts, all.counts2)
-metadata <- rbind(metadata, metadata2)
 ```
 
 Generating a `DGEList` object.
@@ -122,16 +64,8 @@ Generating a `DGEList` object.
 ```{r}
 require(edgeR)
 y <- DGEList(all.counts)
-y$samples$group <- paste0(metadata$Sample, ".", metadata$Batch)
+y$samples$group <- metadata$Condition
 table(y$samples$group)
-```
-
-Replacing the metadata with our new metadata.
-
-```{r}
-tab <- read.table("../../data/metadata.tsv", header=TRUE, sep="\t")
-m <- match(metadata$Library, tab$Library)
-metadata <- tab[m,]
 ```
 
 # Data exploration
@@ -998,11 +932,12 @@ Repeating with a log-fold change threshold of 0.5.
 ```{r, ref.label="progenitor"}
 ```
 
+<!--
 ### Testing for the effect of H19 knockdown
 
 Comparing to the first negative guide.
 
-```{r}
+```{r, eval=FALSE}
 fname <- "CRISPRi_het_H19_vs_Nc.1"
 con <- makeContrasts(
     gCRISPRi.heterogenous_dCas9_KRAB.H19_guide_2.batch_5  
@@ -1017,12 +952,12 @@ WRITE(fit2, fname)
 
 Repeating with a log-fold change threshold of 0.5.
 
-```{r, ref.label="progenitor"}
+```{r, ref.label="progenitor", eval=FALSE}
 ```
 
 Comparing to the second negative guide.
 
-```{r}
+```{r, eval=FALSE}
 fname <- "CRISPRi_het_H19_vs_Nc.2"
 con <- makeContrasts(
     gCRISPRi.heterogenous_dCas9_KRAB.H19_guide_2.batch_5 
@@ -1037,8 +972,9 @@ WRITE(fit2, fname)
 
 Repeating with a log-fold change threshold of 0.5.
 
-```{r, ref.label="progenitor"}
+```{r, ref.label="progenitor", eval=FALSE}
 ```
+-->
 
 # Session information
 

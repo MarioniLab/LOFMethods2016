@@ -38,7 +38,7 @@ output[["Comment[NOMINAL_LENGTH]"]] <- 295
 output[["Comment[NOMINAL_SDEV]"]] <- 25
 output[["Comment[ORIENTATION]"]] <- "5'-3'-3'-5'"
 output[["Protocol REF\tPerformer"]] <- "P-MTAB-53239\tLovorka Stojic"
-output[["Assay Name"]] <- sub("\\.r", "", sub("[_p]?[12].fq.gz", "", final$FileName))
+output[["Assay Name"]] <- sub("_.*_", "_", sub("\\.r", "", sub("[_p]?[12].fq.gz", "", final$FileName)))
 output[["Technology Type"]] <- "sequencing assay"
 output[["Comment[batch number]"]] <- final$Batch
 output[["Comment[sequencing date]"]] <- paste0(substr(final$Date, 1, 4), "-", substr(final$Date, 5, 6), "-", substr(final$Date, 7, 8))

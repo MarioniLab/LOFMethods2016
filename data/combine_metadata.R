@@ -6,7 +6,7 @@ firstlot <- firstlot[,c(1,7)]
 
 lib.num <- firstlot$Library
 exp.num <- sub(".*exp", "\\1", firstlot$Individual)
-exp.num <- as.integer(factor(exp.num))
+exp.num[exp.num=="4b"] <- "5"
 condition <- sub("[ _-]*exp.*", "", firstlot$Individual)
 cleaned.first <- data.frame(Library=lib.num, Condition=condition, Experiment=exp.num) 
 
@@ -68,7 +68,6 @@ secondlot[,1] <- tolower(secondlot[,1])
 
 lib.num <- secondlot$DO_name
 exp.num <- sub(".*exp", "\\1", secondlot$sample_name)
-exp.num <- as.integer(factor(exp.num))
 condition <- sub("_exp.*", "", secondlot$sample_name)
 cleaned.second <- data.frame(Library=lib.num, Condition=condition, Experiment=exp.num) 
 
@@ -115,7 +114,6 @@ thirdlot[,1] <- tolower(thirdlot[,1])
 
 lib.num <- thirdlot$Library
 exp.num <- sub("_LNAold", "", sub(".*exp", "\\1", thirdlot$Sample))
-exp.num <- as.integer(factor(exp.num))
 condition <- sub("_exp.*", "", thirdlot$Sample)
 cleaned.third <- data.frame(Library=lib.num, Condition=condition, Experiment=exp.num) 
 

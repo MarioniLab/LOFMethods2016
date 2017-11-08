@@ -1,6 +1,8 @@
 all.out <- list()
+all.out[["Comment[ArrayExpressAccession]"]] <- "E-MTAB-5308"
 all.out[["MAGE-TAB Version"]] <- "1.1"
 all.out[["Investigation Title"]] <- "RNA-seq of human cell line HeLa after depletion of a lncRNA with three different loss-of-function methods"
+all.out[["Comment[Submitted Name]"]] <- "RNA-seq of human cell line HeLa after depletion of a lncRNA with three different loss-of-function methods"
 all.out[["Experiment Description"]] <- "Long noncoding RNAs (lncRNAs) are a major transcriptional output of the mammalian genome, and their cellular roles are typically assayed by a variety of loss-of-function approaches. This study aims to identify the best current method to deplete nuclear lncRNAs. Small interfering RNAs (RNAi), antisense oligonucleotides (LNAs) and CRISPR interference (CRISPRi) were applied to knock down loc100289019 (a typical nuclear lncRNA, referred to as lnc289) in HeLa cells. We generated sequencing libraries after performing each step of each method, up to and including depletion of lnc289. Differential expression analyses between libraries generated before and after each step allowed us to evaluate the effect of that step on gene expression. The transcriptional effect of lncRNA depletion was then compared to the magnitude of off-target effects inherent to each method."
 
 
@@ -17,8 +19,10 @@ all.out[["Experimental Design Term Accession Number"]] <- c("EFO_0001748",
                                                             "EFO_0001774",
                                                             "EFO_0004666")
 
-all.out[["Experimental Factor Name"]] <- "compound"
-all.out[["Experimental Factor Type"]] <- "compound"
+all.out[["Experimental Factor Name"]] <- c("compound", 
+                                           "genotype",
+                                           "loss of function method")
+all.out[["Experimental Factor Type"]] <- all.out[["Experimental Factor Name"]]
 all.out[["Experimental Factor Term Source REF"]] <- ""
 all.out[["Experimental Factor Term Accession Number"]] <- ""
 
@@ -93,9 +97,11 @@ all.out[["Protocol Software"]] <- c("",
 all.out[["Term Source Name"]] <- "EFO"
 all.out[["Term Source File"]] <- "http://www.ebi.ac.uk/efo/"
 all.out[["Term Source Version"]] <- ""
-all.out[["SDRF File"]] <- "sdrf.tsv"
 all.out[["Public Release Date"]] <- "2017-05-31"
 all.out[["Comment[AEExperimentType]"]] <- "RNA-seq of coding RNA"
+all.out[["Comment[SequenceDataURI]"]] <- "http://www.ebi.ac.uk/ena/data/view/ERR1751045-ERR1751697"
+all.out[["Comment[SecondaryAccession]"]] <- "ERP020478"
+all.out[["SDRF File"]] <- "E-MTAB-5308.sdrf.txt"
 
 unlink("idf.tsv")
 for (x in names(all.out)) {

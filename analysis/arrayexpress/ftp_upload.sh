@@ -1,4 +1,4 @@
-cd fastq
+cd ../../data/fastq
 for x in $(ls)
 do 
     echo $x
@@ -13,7 +13,8 @@ bye
 EOT
 done
 
-cd -
+cd ../
+ln -s genic_counts.tsv lncRNA_counts.tsv
 ftp -n -v ftp-private.ebi.ac.uk << EOT
 binary
 pass
@@ -23,4 +24,4 @@ cd E-MTAB-5308
 put lncRNA_counts.tsv
 bye
 EOT
-
+rm lncRNA_counts.tsv

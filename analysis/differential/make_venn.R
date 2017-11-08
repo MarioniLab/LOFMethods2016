@@ -12,10 +12,10 @@ for (mode in c("results_de", "results_lfc")) {
     clone1 <- read.table(file.path(mode, "CRISPRi_clone1_vs_cells.txt"), header=TRUE, stringsAsFactors=FALSE)
     clone3 <- read.table(file.path(mode, "CRISPRi_clone3_vs_cells.txt"), header=TRUE, stringsAsFactors=FALSE)
 
-    common.order <- sort(clone2$ENSEMBL)
-    m2 <- match(common.order, clone2$ENSEMBL)
-    m1 <- match(common.order, clone1$ENSEMBL)
-    m4 <- match(common.order, clone3$ENSEMBL)
+    common.order <- sort(rownames(clone2))
+    m2 <- match(common.order, rownames(clone2))
+    m1 <- match(common.order, rownames(clone1))
+    m4 <- match(common.order, rownames(clone3))
 
     clone2 <- clone2[m2,]
     clone1 <- clone1[m1,]
@@ -24,7 +24,7 @@ for (mode in c("results_de", "results_lfc")) {
     combined.p <- c(clone1$P.Value, clone2$P.Value, clone3$P.Value)
     is.sig <- p.adjust(combined.p, method="BH") <= 0.05
     all.choices <- matrix(is.sig, nrow=nrow(clone1))
-    colnames(all.choices) <- c("Clone 1", "Clone 2", "Clone 4")
+    colnames(all.choices) <- c("Clone 1", "Clone 2", "Clone 3")
 
     library(limma)
     pdf(sprintf("pics/venn_clones_%s.pdf", extra))
@@ -32,8 +32,8 @@ for (mode in c("results_de", "results_lfc")) {
     dev.off()
 
     in.all <- rowSums(all.choices)==3L
-    write.table(file=file.path(mode, "combined_clones.txt"), row.names=FALSE, sep="\t", quote=FALSE,
-                data.frame(clone2[,c("ENSEMBL", "SYMBOL")], 
+    write.table(file=file.path(mode, "combined_clones.txt"), sep="\t", quote=FALSE, col.names=NA,
+                data.frame(clone2$Symbol, row.names=rownames(clone2),
                            clone1.logFC=clone1$logFC, clone2.logFC=clone2$logFC, clone3.logFC=clone3$logFC, 
                            adj.P.Val=ifelse(in.all, 0, 1)))
    
@@ -44,22 +44,21 @@ for (mode in c("results_de", "results_lfc")) {
         y <- readRDS("object.rds")
         adjc <- cpm(y, log=TRUE, prior.count=3)
 
-        my <- match(clone2$ENSEMBL[in.all], y$genes$ENSEMBL)
+        my <- match(rownames(clone2)[in.all], rownames(y$genes))
         chosen.adjc <- adjc[my,]
-        my.names <- y$genes$SYMBOL[my]
-        my.names[is.na(my.names)] <- y$genes$ENSEMBL[my][is.na(my.names)]
+        my.names <- as.character(y$genes$Symbol)[my]
+        my.names[is.na(my.names)] <- rownames(y$genes)[my][is.na(my.names)]
         rownames(chosen.adjc) <- my.names
 
-        is.clone.lib <- grepl("20160713b", y$samples$group)
+        is.clone.lib <- grepl("batch_3", y$samples$group)
         chosen.adjc <- chosen.adjc[,is.clone.lib]
-        full.names <- sub("\\..*", "", y$samples$group[is.clone.lib])
-        full.names <- sub("Hela(Cas9)?", "", full.names)
-        full.names <- sub("([^ ])([0-9])", "\\1 \\2", full.names)
+        full.names <- strsplit(y$samples$group[is.clone.lib], "\\.")
+        full.names <- sapply(full.names, FUN="[", i=2)
         colnames(chosen.adjc) <- full.names
         
         o <- order(full.names)
         chosen.adjc <- chosen.adjc[,o]
-        chosen.adjc <- chosen.adjc - rowMeans(chosen.adjc[,colnames(chosen.adjc)=="cells"]) # centre each row's Hela's to be zero.
+        chosen.adjc <- chosen.adjc - rowMeans(chosen.adjc[,colnames(chosen.adjc)=="wild_type_genotype"]) # centre each row's Hela's to be zero.
 
         require(gplots)
         pdf("pics/heat_clone_common.pdf")
@@ -67,18 +66,17 @@ for (mode in c("results_de", "results_lfc")) {
                   trace="none", margins=c(5, 8), breaks=seq(-5, 5, length.out=21),  symkey=FALSE)
         dev.off()
 
-        # Cbinding with log-fold changes for the heterogeneous vs Cells.
-        is.het.lib <- grepl("20161212", y$samples$group) & (grepl("Helahetero", y$samples$group) | grepl("HelaBFPhetero", y$samples$group))
+        # Cbinding with log-fold changes for the untreated heterogeneous vs Cells.
+        is.het.lib <- grepl("none.batch_5", y$samples$group) 
         het.chosen.adjc <- adjc[my, is.het.lib]
-        het.full.names <- sub("\\..*", "", y$samples$group[is.het.lib])
-        het.full.names <- sub("Hela(Cas9)?", "", het.full.names)
-        het.full.names <- sub("([^ ])([0-9])", "\\1 \\2", het.full.names)
+        het.full.names <- strsplit(y$samples$group[is.het.lib], "\\.")
+        het.full.names <- sapply(het.full.names, FUN="[", i=2)
         colnames(het.chosen.adjc) <- het.full.names
         rownames(het.chosen.adjc) <- my.names
         
         o <- order(het.full.names)
         het.chosen.adjc <- het.chosen.adjc[,o]
-        het.chosen.adjc <- het.chosen.adjc - rowMeans(het.chosen.adjc[,colnames(het.chosen.adjc)=="hetero"]) 
+        het.chosen.adjc <- het.chosen.adjc - rowMeans(het.chosen.adjc[,colnames(het.chosen.adjc)=="wild_type_genotype"]) 
 
         pdf("pics/heat_het_common.pdf")
         heatmap.2(het.chosen.adjc, col=bluered, symm=TRUE, dendrogram="none", Colv=FALSE, Rowv=FALSE,
@@ -93,10 +91,10 @@ for (mode in c("results_de", "results_lfc")) {
     LNA <- read.table(file.path(mode, "combined_LNA_289.txt"), header=TRUE, stringsAsFactors=FALSE)
     CRISPRi <- read.table(file.path(mode, "combined_CRISPRi_289.txt"), header=TRUE, stringsAsFactors=FALSE)
 
-    common.order <- sort(LNA$ENSEMBL)
-    ms <- match(common.order, CRISPRi.het$ENSEMBL)
-    ml <- match(common.order, LNA$ENSEMBL)
-    mc <- match(common.order, CRISPRi$ENSEMBL)
+    common.order <- sort(rownames(LNA))
+    ms <- match(common.order, rownames(CRISPRi.het))
+    ml <- match(common.order, rownames(LNA))
+    mc <- match(common.order, rownames(CRISPRi))
 
     CRISPRi.het <- CRISPRi.het[ms,]
     LNA <- LNA[ml,]
@@ -122,12 +120,12 @@ for (mode in c("results_de", "results_lfc")) {
     DharmaconvCells <- read.table(file.path(mode, "siRNA_Dharmacon_vs_cells.txt"), header=TRUE, stringsAsFactors=FALSE)
     AmbionvDharmacon <- read.table(file.path(mode, "siRNA_Ambion_vs_Dharmacon.txt"), header=TRUE, stringsAsFactors=FALSE)
 
-    common.order <- sort(Ambionv289$ENSEMBL)
-    Ambionv289 <- Ambionv289[match(common.order, Ambionv289$ENSEMBL),]
-    AmbionvCells <- AmbionvCells[match(common.order, AmbionvCells$ENSEMBL),]
-    Dharmaconv289 <- Dharmaconv289[match(common.order, Dharmaconv289$ENSEMBL),]
-    DharmaconvCells <- DharmaconvCells[match(common.order, DharmaconvCells$ENSEMBL),]
-    AmbionvDharmacon <- AmbionvDharmacon[match(common.order, AmbionvDharmacon$ENSEMBL),]
+    common.order <- sort(rownames(Ambionv289))
+    Ambionv289 <- Ambionv289[match(common.order, rownames(Ambionv289)),]
+    AmbionvCells <- AmbionvCells[match(common.order, rownames(AmbionvCells)),]
+    Dharmaconv289 <- Dharmaconv289[match(common.order, rownames(Dharmaconv289)),]
+    DharmaconvCells <- DharmaconvCells[match(common.order, rownames(DharmaconvCells)),]
+    AmbionvDharmacon <- AmbionvDharmacon[match(common.order, rownames(AmbionvDharmacon)),]
 
     is.sig <- cbind(AmbionvCells=AmbionvCells$P.Value <= threshold, 
                     DharmaconvCells=DharmaconvCells$P.Value <= threshold) 
@@ -149,10 +147,10 @@ for (mode in c("results_de", "results_lfc")) {
     LNAvB <- read.table(file.path(mode, "LNA_289.2_vs_controlB.txt"), header=TRUE, stringsAsFactors=FALSE)
     AvB <- read.table(file.path(mode, "LNA_controlA_vs_controlB.txt"), header=TRUE, stringsAsFactors=FALSE)
 
-    common.order <- sort(LNAvA$ENSEMBL)
-    LNAvA <- LNAvA[match(common.order, LNAvA$ENSEMBL),]
-    LNAvB <- LNAvB[match(common.order, LNAvB$ENSEMBL),]
-    AvB <- AvB[match(common.order, AvB$ENSEMBL),]
+    common.order <- sort(rownames(LNAvA))
+    LNAvA <- LNAvA[match(common.order, rownames(LNAvA)),]
+    LNAvB <- LNAvB[match(common.order, rownames(LNAvB)),]
+    AvB <- AvB[match(common.order, rownames(AvB)),]
 
     is.sig <- cbind(
                     LNAvA=LNAvA$P.Value <= threshold, 

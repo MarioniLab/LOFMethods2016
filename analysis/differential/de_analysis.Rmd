@@ -17,6 +17,7 @@ output:
 knitr::opts_chunk$set(error=FALSE, message=FALSE, warning=FALSE)
 knitr::opts_knit$set(width=100)
 options(width=100)
+local <- TRUE
 ```
 
 # Introduction
@@ -25,9 +26,17 @@ options(width=100)
 
 Loading in the counts, and ignoring the first column of gene lengths.
 
-```{r}
+```{r, eval=local, echo=local}
 all.counts <- read.table("../../data/genic_counts.tsv", header=TRUE, row.names=1, sep="\t",
-        colClasses=c(list("character", "integer"), as.list(rep("integer", 768))))
+    colClasses=c(list("character", "integer"), as.list(rep("integer", 768))))
+lengths <- all.counts[,1]
+all.counts <- all.counts[,-1]
+dim(all.counts)
+```
+
+```{r, eval=!local, echo=!local}
+all.counts <- read.table("../arrayexpress/lncRNA_counts.tsv", header=TRUE, row.names=1, sep="\t",
+    colClasses=c(list("character", "integer"), as.list(rep("integer", 768))))
 lengths <- all.counts[,1]
 all.counts <- all.counts[,-1]
 dim(all.counts)
@@ -44,11 +53,31 @@ dim(all.counts)
 
 Loading in the experimental design, and checking that all the samples are present.
 
-```{r}
+```{r, eval=local, echo=local}
 metadata <- read.table("../../data/metadata.tsv", stringsAsFactors=FALSE, header=TRUE, sep="\t")
 m <- match(colnames(all.counts), metadata$Library)
 stopifnot(all(!is.na(m)))
 metadata <- metadata[m,]
+```
+
+```{r, eval=!local, echo=!local}
+metadata <- read.table("../arrayexpress/E-MTAB-5308.sdrf.txt", 
+    stringsAsFactors=FALSE, header=TRUE, sep="\t", check.names=FALSE)
+m <- match(colnames(all.counts), metadata[["Source Name"]])
+stopifnot(all(!is.na(m)))
+metadata <- metadata[m,]
+
+# Adding a number of fields for easier reference.
+condition <- paste(metadata[["Factor Value[loss of function method]"]],
+                   metadata[["Factor Value[genotype]"]],
+                   metadata[["Factor Value[compound]"]],
+                   paste0("batch_", metadata[["Comment[batch number]"]]),
+                   sep=".")
+condition <- gsub("[- ]", "_", condition)
+metadata$Condition <- condition
+metadata$LOF <- metadata[["Factor Value[loss of function method]"]]
+metadata$Batch <- metadata[["Comment[batch number]"]]
+metadata$Experiment <- metadata[["Comment[experiment number]"]]
 ```
 
 Removing the unnecessary H19 samples.

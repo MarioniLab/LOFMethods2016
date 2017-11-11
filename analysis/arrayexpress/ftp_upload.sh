@@ -3,7 +3,7 @@ for x in $(ls)
 do 
     echo $x
 ftp -n -v ftp-private.ebi.ac.uk << EOT
-ascii
+binary
 pass
 user aexpress aexpress1
 prompt
@@ -16,7 +16,7 @@ done
 cd ../
 ln -s genic_counts.tsv lncRNA_counts.tsv
 ftp -n -v ftp-private.ebi.ac.uk << EOT
-ascii
+binary
 pass
 user aexpress aexpress1
 prompt

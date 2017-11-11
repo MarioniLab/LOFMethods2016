@@ -168,7 +168,7 @@ LOF <- rep("CRISPRi", nrow(cleaned.fourth))
 LOF[cleaned.fourth$Condition=="Hela_hetero"] <- "none"
 
 # Setting genotype:
-genotype <- rep("heterogenous dCas9-KRAB", nrow(cleaned.fourth))
+genotype <- rep("heterogeneous dCas9-KRAB", nrow(cleaned.fourth))
 genotype[cleaned.fourth$Condition=="Hela_hetero"] <- "wild type genotype"
 
 # Setting compound:

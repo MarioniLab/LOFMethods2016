@@ -8,8 +8,8 @@ output:
     toc_float: true
     depth: 3
     number_sections: true
-    theme: united 
-    highlight: tango    
+    theme: united
+    highlight: tango
     fig_caption: false
 ---
 
@@ -75,7 +75,7 @@ Exploring the libraries.
 ```{r}
 colors <- rainbow(length(unique(y$samples$group)))
 adjc <- cpm(y, log=TRUE, prior=3)
-mds.out <- plotMDS(adjc, col=colors[as.integer(factor(y$samples$group))], pch=16) 
+mds.out <- plotMDS(adjc, col=colors[as.integer(factor(y$samples$group))], pch=16)
 ```
 
 Colouring by type of experiment (CRISPRi, siRNA or LNA).
@@ -83,8 +83,8 @@ Colouring by type of experiment (CRISPRi, siRNA or LNA).
 ```{r}
 col <- rep("grey80", ncol(y)) # cells alone
 col[metadata$LOF=="CRISPRi"] <- "orange"
-col[metadata$LOF=="LNA"] <- "blue" 
-col[metadata$LOF=="RNA interference"] <- "red" 
+col[metadata$LOF=="LNA"] <- "blue"
+col[metadata$LOF=="RNA interference"] <- "red"
 plotMDS(mds.out, col=col, pch=16, label=1:ncol(y))
 ```
 
@@ -147,7 +147,7 @@ y$genes <- data.frame(Symbol=symb, row.names=rownames(y))
 Setting up a design matrix.
 We use a one-way layout where each group gets its own coefficient in the matrix.
 We also add blocking factors for the various experimental terms, including the condition and the batch.
-(The first factor for each batch needs to be removed to achieve full rank. 
+(The first factor for each batch needs to be removed to achieve full rank.
 This is except for the first batch, where the blocking factor is automatically removed by `model.matrix`.)
 
 ```{r}
@@ -192,7 +192,7 @@ dir.create("results_de", showWarning=FALSE)
 dir.create("results_lfc", showWarning=FALSE)
 WRITE <- function(fit, fname, lfc=FALSE) {
     fname <- paste0(fname, ".txt")
-    if (lfc) { 
+    if (lfc) {
         res <- topTreat(fit, n=Inf, sort.by="p")
         fname <- file.path("results_lfc", fname)
     } else {
@@ -213,17 +213,17 @@ WRITE(fit2, fname, lfc=TRUE)
 
 ## Contrasts for siRNA
 
-### Effect of siRNA transfection plus any sequence-dependent off-target effects 
+### Effect of siRNA transfection plus any sequence-dependent off-target effects
 
 Testing for DE between Ambion control siRNA and cells.
 
 ```{r}
 fname <- "siRNA_Ambion_vs_cells"
 con <- makeContrasts(
-    gRNA_interference.wild_type_genotype.Ambion_control.batch_1 
+    gRNA_interference.wild_type_genotype.Ambion_control.batch_1
         - gnone.wild_type_genotype.none.batch_1,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -240,10 +240,10 @@ Testing for DE between Dharmacon control siRNA and cells.
 ```{r}
 fname <- "siRNA_Dharmacon_vs_cells"
 con <- makeContrasts(
-    gRNA_interference.wild_type_genotype.Dharmacon_control.batch_1 
+    gRNA_interference.wild_type_genotype.Dharmacon_control.batch_1
          - gnone.wild_type_genotype.none.batch_1,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -262,10 +262,10 @@ Testing for DE between siRNA controls.
 ```{r}
 fname <- "siRNA_Ambion_vs_Dharmacon"
 con <- makeContrasts(
-    gRNA_interference.wild_type_genotype.Ambion_control.batch_1 
-        - gRNA_interference.wild_type_genotype.Dharmacon_control.batch_1, 
+    gRNA_interference.wild_type_genotype.Ambion_control.batch_1
+        - gRNA_interference.wild_type_genotype.Dharmacon_control.batch_1,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -284,10 +284,10 @@ Testing for DE between 289 siRNA and the Ambion control.
 ```{r}
 fname <- "siRNA_289_vs_Ambion"
 con <- makeContrasts(
-    gRNA_interference.wild_type_genotype.289_siRNA.batch_1 
+    gRNA_interference.wild_type_genotype.289_siRNA.batch_1
         - gRNA_interference.wild_type_genotype.Ambion_control.batch_1,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -304,10 +304,10 @@ Testing for DE between 289 siRNA and the Dharmacon control.
 ```{r}
 fname <- "siRNA_289_vs_Dharmacon"
 con <- makeContrasts(
-    gRNA_interference.wild_type_genotype.289_siRNA.batch_1 
+    gRNA_interference.wild_type_genotype.289_siRNA.batch_1
         - gRNA_interference.wild_type_genotype.Dharmacon_control.batch_1,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -328,10 +328,10 @@ Testing for DE between transfected cels and non-transfected cells.
 ```{r}
 fname <- "LNA_trans_vs_cells"
 con <- makeContrasts(
-    gLNA.wild_type_genotype.Transfection_control.batch_4 
+    gLNA.wild_type_genotype.Transfection_control.batch_4
         - gnone.wild_type_genotype.none.batch_4,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -343,17 +343,17 @@ Repeating with a log-fold change threshold of 0.5.
 ```{r, ref.label="progenitor"}
 ```
 
-### Effect of LNA transfection plus off-target effects 
+### Effect of LNA transfection plus off-target effects
 
 Testing for DE between LNA control A and transfected cells.
 
 ```{r}
 fname <- "LNA_controlA_vs_trans"
 con <- makeContrasts(
-    gLNA.wild_type_genotype.Negative_control_A.batch_4 
+    gLNA.wild_type_genotype.Negative_control_A.batch_4
         - gLNA.wild_type_genotype.Transfection_control.batch_4,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -370,10 +370,10 @@ Testing for DE between LNA control B and transfected cells.
 ```{r}
 fname <- "LNA_controlB_vs_trans"
 con <- makeContrasts(
-    gLNA.wild_type_genotype.Negative_control_B.batch_4 
+    gLNA.wild_type_genotype.Negative_control_B.batch_4
         - gLNA.wild_type_genotype.Transfection_control.batch_4,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -392,10 +392,10 @@ Testing for DE between LNA controls A and B.
 ```{r}
 fname <- "LNA_controlA_vs_controlB"
 con <- makeContrasts(
-    gLNA.wild_type_genotype.Negative_control_A.batch_4 
-        - gLNA.wild_type_genotype.Negative_control_B.batch_4, 
+    gLNA.wild_type_genotype.Negative_control_A.batch_4
+        - gLNA.wild_type_genotype.Negative_control_B.batch_4,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -414,10 +414,10 @@ Testing for DE between 289 LNA2 knockdown and control B.
 ```{r}
 fname <- "LNA_289.2_vs_controlB"
 con <- makeContrasts(
-    gLNA.wild_type_genotype.289_LNA.batch_1 
+    gLNA.wild_type_genotype.289_LNA.batch_1
         - gLNA.wild_type_genotype.Negative_control_B.batch_1,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -434,12 +434,12 @@ Testing for DE between 289 LNA2 knockdown and control A, via the shared control 
 ```{r}
 fname <- "LNA_289.2_vs_controlA"
 con <- makeContrasts(
-    (gLNA.wild_type_genotype.289_LNA.batch_1 
-        - gLNA.wild_type_genotype.Negative_control_B.batch_1) - 
-        (gLNA.wild_type_genotype.Negative_control_A.batch_4 
+    (gLNA.wild_type_genotype.289_LNA.batch_1
+        - gLNA.wild_type_genotype.Negative_control_B.batch_1) -
+        (gLNA.wild_type_genotype.Negative_control_A.batch_4
         - gLNA.wild_type_genotype.Negative_control_B.batch_4),
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -460,7 +460,7 @@ Testing for DE between dCas9-expressing clone 2 and cells (first batch).
 ```{r}
 fname <- "CRISPRi_clone2_vs_cells_I"
 con <- makeContrasts(
-    gCRISPRi.dCas9_KRAB_clone_2.none.batch_1 
+    gCRISPRi.dCas9_KRAB_clone_2.none.batch_1
         - gnone.wild_type_genotype.none.batch_1,
     levels=design)
 fit2 <- contrasts.fit(fit, con)
@@ -479,10 +479,10 @@ Testing for DE between dCas9-expressing clone 2 and cells (second batch).
 ```{r}
 fname <- "CRISPRi_clone2_vs_cells_II"
 con <- makeContrasts(
-    gCRISPRi.dCas9_KRAB_clone_2.none.batch_3 
+    gCRISPRi.dCas9_KRAB_clone_2.none.batch_3
         - gnone.wild_type_genotype.none.batch_3,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -499,10 +499,10 @@ Testing for DE between dCas9-expressing clone 1 and cells.
 ```{r}
 fname <- "CRISPRi_clone1_vs_cells"
 con <- makeContrasts(
-    gCRISPRi.dCas9_KRAB_clone_1.none.batch_3 
+    gCRISPRi.dCas9_KRAB_clone_1.none.batch_3
         - gnone.wild_type_genotype.none.batch_3,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -519,10 +519,10 @@ Testing for DE between dCas9-expressing clone 3 and cells.
 ```{r}
 fname <- "CRISPRi_clone3_vs_cells"
 con <- makeContrasts(
-    gCRISPRi.dCas9_KRAB_clone_3.none.batch_3 
+    gCRISPRi.dCas9_KRAB_clone_3.none.batch_3
         - gnone.wild_type_genotype.none.batch_3,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -534,17 +534,17 @@ Repeating with a log-fold change threshold of 0.5.
 ```{r, ref.label="progenitor"}
 ```
 
-### Minimal founder effects of cloning 
+### Minimal founder effects of cloning
 
 Testing for DE between clones 1 and 2.
 
 ```{r}
 fname <- "CRISPRi_clone1_vs_clone2"
 con <- makeContrasts(
-    gCRISPRi.dCas9_KRAB_clone_1.none.batch_3 
+    gCRISPRi.dCas9_KRAB_clone_1.none.batch_3
         - gCRISPRi.dCas9_KRAB_clone_2.none.batch_3,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -561,10 +561,10 @@ Testing for DE between clones 1 and 3.
 ```{r}
 fname <- "CRISPRi_clone1_vs_clone3"
 con <- makeContrasts(
-    gCRISPRi.dCas9_KRAB_clone_1.none.batch_3 
+    gCRISPRi.dCas9_KRAB_clone_1.none.batch_3
         - gCRISPRi.dCas9_KRAB_clone_3.none.batch_3,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -581,10 +581,10 @@ Testing for DE between clones 2 and 3.
 ```{r}
 fname <- "CRISPRi_clone2_vs_clone3"
 con <- makeContrasts(
-    gCRISPRi.dCas9_KRAB_clone_2.none.batch_3 
+    gCRISPRi.dCas9_KRAB_clone_2.none.batch_3
         - gCRISPRi.dCas9_KRAB_clone_3.none.batch_3,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -603,10 +603,10 @@ Testing for DE between the negative guide 2 and clone 2 (first batch).
 ```{r}
 fname <- "CRISPRi_negguide2_vs_clone2_I"
 con <- makeContrasts(
-    gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_1 
+    gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_1
         - gCRISPRi.dCas9_KRAB_clone_2.none.batch_1,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -623,10 +623,10 @@ Testing for DE between the negative guide 2 and clone 2 (second batch).
 ```{r}
 fname <- "CRISPRi_negguide2_vs_clone2_II"
 con <- makeContrasts(
-    gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_2 
+    gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_2
         - gCRISPRi.dCas9_KRAB_clone_2.none.batch_2,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -643,10 +643,10 @@ Testing for DE between the negative guide 1 and clone 2.
 ```{r}
 fname <- "CRISPRi_negguide1_vs_clone2"
 con <- makeContrasts(
-    gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_1.batch_2 
+    gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_1.batch_2
         - gCRISPRi.dCas9_KRAB_clone_2.none.batch_2,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -665,10 +665,10 @@ Testing for DE between guides 1 and 2.
 ```{r}
 fname <- "CRISPRi_negguide1_vs_negguide2"
 con <- makeContrasts(
-    gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_1.batch_2 
+    gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_1.batch_2
         - gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_2,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -680,17 +680,17 @@ Repeating with a log-fold change threshold of 0.5.
 ```{r, ref.label="progenitor"}
 ```
 
-### Effect of actual 289 knockdown plus any off-target effects 
+### Effect of actual 289 knockdown plus any off-target effects
 
 Testing for DE between 289 guide 1 and negative guide 2.
 
 ```{r}
 fname <- "CRISPRi_289.1_vs_negguide2"
 con <- makeContrasts(
-    gCRISPRi.dCas9_KRAB_clone_2.289_guide_1.batch_1 
-        - gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_1,   
+    gCRISPRi.dCas9_KRAB_clone_2.289_guide_1.batch_1
+        - gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_1,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -707,10 +707,10 @@ Testing for DE between 289 guide 9 and negative guide 2.
 ```{r}
 fname <- "CRISPRi_289.9_vs_negguide2"
 con <- makeContrasts(
-    gCRISPRi.dCas9_KRAB_clone_2.289_guide_9.batch_1 
-        - gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_1,   
+    gCRISPRi.dCas9_KRAB_clone_2.289_guide_9.batch_1
+        - gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_1,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -724,7 +724,7 @@ Repeating with a log-fold change threshold of 0.5.
 
 <!--
 
-### Effect of actual H19 knockdown plus any off-target effects 
+### Effect of actual H19 knockdown plus any off-target effects
 
 
 Testing for DE between H19 guide 1 and negative guide 1.
@@ -732,7 +732,7 @@ Testing for DE between H19 guide 1 and negative guide 1.
 ```{r, eval=FALSE}
 fname <- "CRISPRi_H19.1_vs_negguide1"
 con <- makeContrasts(
-    gCRISPRi.dCas9_KRAB_clone_2.H19_guide_1.batch_2 - 
+    gCRISPRi.dCas9_KRAB_clone_2.H19_guide_1.batch_2 -
         gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_1.batch_2,
     levels=design)
 fit2 <- contrasts.fit(fit, con)
@@ -751,9 +751,9 @@ Testing for DE between H19 guide 1 and negative guide 2.
 ```{r, eval=FALSE}
 fname <- "CRISPRi_H19.1_vs_negguide2"
 con <- makeContrasts(
-    gCRISPRi.dCas9_KRAB_clone_2.H19_guide_1.batch_2 - 
+    gCRISPRi.dCas9_KRAB_clone_2.H19_guide_1.batch_2 -
         gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_2,
-    levels=design)        
+    levels=design)
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -770,9 +770,9 @@ Testing for DE between H19 guide 2 and negative guide 1.
 ```{r, eval=FALSE}
 fname <- "CRISPRi_H19.2_vs_negguide1"
 con <- makeContrasts(
-    gCRISPRi.dCas9_KRAB_clone_2.H19_guide_2.batch_2 - 
+    gCRISPRi.dCas9_KRAB_clone_2.H19_guide_2.batch_2 -
         gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_1.batch_2,
-    levels=design)        
+    levels=design)
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -789,9 +789,9 @@ Testing for DE between H19 guide 2 and negative guide 2.
 ```{r, eval=FALSE}
 fname <- "CRISPRi_H19.2_vs_negguide2"
 con <- makeContrasts(
-    gCRISPRi.dCas9_KRAB_clone_2.H19_guide_2.batch_2 - 
+    gCRISPRi.dCas9_KRAB_clone_2.H19_guide_2.batch_2 -
         gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_2,
-    levels=design)        
+    levels=design)
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -813,10 +813,10 @@ Comparing HeLa cells with those that have been transduced and selected for dCas9
 ```{r}
 fname <- "CRISPRi_het_BFP_vs_cells"
 con <- makeContrasts(
-    gCRISPRi.heterogenous_dCas9_KRAB.none.batch_5 
+    gCRISPRi.heterogeneous_dCas9_KRAB.none.batch_5
         - gnone.wild_type_genotype.none.batch_5,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -835,10 +835,10 @@ Testing for DE after transfection of negative control to heterogeneous populatio
 ```{r}
 fname <- "CRISPRi_het_Nc.1_vs_BFP"
 con <- makeContrasts(
-    gCRISPRi.heterogenous_dCas9_KRAB.Negative_control_guide_1.batch_5 
-        - gCRISPRi.heterogenous_dCas9_KRAB.none.batch_5,
+    gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_1.batch_5
+        - gCRISPRi.heterogeneous_dCas9_KRAB.none.batch_5,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -855,10 +855,10 @@ Now for the other guide.
 ```{r}
 fname <- "CRISPRi_het_Nc.2_vs_BFP"
 con <- makeContrasts(
-    gCRISPRi.heterogenous_dCas9_KRAB.Negative_control_guide_2.batch_5 
-        - gCRISPRi.heterogenous_dCas9_KRAB.none.batch_5,
+    gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_5
+        - gCRISPRi.heterogeneous_dCas9_KRAB.none.batch_5,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -875,10 +875,10 @@ Testing for DE between the negative guides.
 ```{r}
 fname <- "CRISPRi_het_Nc.1_vs_Nc.2"
 con <- makeContrasts(
-    gCRISPRi.heterogenous_dCas9_KRAB.Negative_control_guide_1.batch_5 
-       - gCRISPRi.heterogenous_dCas9_KRAB.Negative_control_guide_2.batch_5,
+    gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_1.batch_5
+       - gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_5,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -897,8 +897,8 @@ Comparing to the first negative guide.
 ```{r}
 fname <- "CRISPRi_het_289.9_vs_Nc.1"
 con <- makeContrasts(
-    gCRISPRi.heterogenous_dCas9_KRAB.289_guide_9.batch_5 
-        - gCRISPRi.heterogenous_dCas9_KRAB.Negative_control_guide_1.batch_5,
+    gCRISPRi.heterogeneous_dCas9_KRAB.289_guide_9.batch_5
+        - gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_1.batch_5,
     levels=design)
 colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
@@ -917,10 +917,10 @@ Comparing to the second negative guide.
 ```{r}
 fname <- "CRISPRi_het_289.9_vs_Nc.2"
 con <- makeContrasts(
-    gCRISPRi.heterogenous_dCas9_KRAB.289_guide_9.batch_5 
-        - gCRISPRi.heterogenous_dCas9_KRAB.Negative_control_guide_2.batch_5,
+    gCRISPRi.heterogeneous_dCas9_KRAB.289_guide_9.batch_5
+        - gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_5,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -940,10 +940,10 @@ Comparing to the first negative guide.
 ```{r, eval=FALSE}
 fname <- "CRISPRi_het_H19_vs_Nc.1"
 con <- makeContrasts(
-    gCRISPRi.heterogenous_dCas9_KRAB.H19_guide_2.batch_5  
-        - gCRISPRi.heterogenous_dCas9_KRAB.Negative_control_guide_1.batch_5,
+    gCRISPRi.heterogeneous_dCas9_KRAB.H19_guide_2.batch_5
+        - gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_1.batch_5,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -960,10 +960,10 @@ Comparing to the second negative guide.
 ```{r, eval=FALSE}
 fname <- "CRISPRi_het_H19_vs_Nc.2"
 con <- makeContrasts(
-    gCRISPRi.heterogenous_dCas9_KRAB.H19_guide_2.batch_5 
-         - gCRISPRi.heterogenous_dCas9_KRAB.Negative_control_guide_2.batch_5,
+    gCRISPRi.heterogeneous_dCas9_KRAB.H19_guide_2.batch_5
+         - gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_5,
     levels=design)
-colnames(con) <- fname   
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))

@@ -1,4 +1,4 @@
-knitr::knit("de_analysis.Rmd"); rmarkdown::render("de_analysis.md"); rm(list=ls())
+.use.local <- FALSE; knitr::knit("de_analysis.Rmd"); rmarkdown::render("de_analysis.md"); rm(list=ls())
 source("make_flowpic.R"); rm(list=ls())
 source("compute_iut.R"); rm(list=ls())
 source("make_supp_tables.R"); rm(list=ls())

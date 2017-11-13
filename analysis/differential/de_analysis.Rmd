@@ -80,14 +80,6 @@ metadata$Batch <- metadata[["Comment[batch number]"]]
 metadata$Experiment <- metadata[["Comment[experiment number]"]]
 ```
 
-Removing the unnecessary H19 samples.
-
-```{r}
-is.h19 <- grepl("H19", metadata$Condition)
-metadata <- metadata[!is.h19,]
-all.counts <- all.counts[,!is.h19]
-```
-
 Generating a `DGEList` object.
 
 ```{r}
@@ -128,18 +120,24 @@ Checking that the samples express the genes they're meant to express (or not).
 
 ```{r}
 g <- factor(metadata$Condition)
-par(mar=c(12.1,4.1,4.1,2.1))
+
+par(mar=c(12.1,4.1,4.1,2.1)) # 289
 plot(as.integer(g), adjc["ENSG00000234771",], xaxt="n", ylab="log-CPM", main="289", xlab="")
 axis(1, at=seq_len(nlevels(g)), levels(g), las=2)
+
 par(mar=c(12.1,4.1,4.1,2.1))
 plot(as.integer(g), adjc["Cas9",], xaxt="n", ylab="log-CPM", main="Cas9", xlab="")
+axis(1, at=seq_len(nlevels(g)), levels(g), las=2)
+
+par(mar=c(12.1,4.1,4.1,2.1)) # H19
+plot(as.integer(g), adjc["ENSG00000130600",], xaxt="n", ylab="log-CPM", main="H19", xlab="")
 axis(1, at=seq_len(nlevels(g)), levels(g), las=2)
 ```
 
 We save these to file for prettier plotting.
 
 ```{r}
-to.save <- data.frame(Group=g, t(adjc[c("ENSG00000234771", "Cas9"),]))
+to.save <- data.frame(Group=g, t(adjc[c("ENSG00000234771", "Cas9", "ENSG00000130600"),]))
 to.save <- to.save[order(to.save$Group),]
 write.table(file="key_exprs.tsv", to.save, sep="\t", quote=FALSE, col.names=NA)
 ```
@@ -751,52 +749,11 @@ Repeating with a log-fold change threshold of 0.5.
 ```{r, ref.label="progenitor"}
 ```
 
-<!--
-
 ### Effect of actual H19 knockdown plus any off-target effects
-
-
-Testing for DE between H19 guide 1 and negative guide 1.
-
-```{r, eval=FALSE}
-fname <- "CRISPRi_H19.1_vs_negguide1"
-con <- makeContrasts(
-    gCRISPRi.dCas9_KRAB_clone_2.H19_guide_1.batch_2 -
-        gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_1.batch_2,
-    levels=design)
-fit2 <- contrasts.fit(fit, con)
-fit2 <- eBayes(fit2, robust=TRUE)
-summary(decideTests(fit2))
-WRITE(fit2, fname)
-```
-
-Repeating with a log-fold change threshold of 0.5.
-
-```{r, ref.label="progenitor", eval=FALSE}
-```
-
-Testing for DE between H19 guide 1 and negative guide 2.
-
-```{r, eval=FALSE}
-fname <- "CRISPRi_H19.1_vs_negguide2"
-con <- makeContrasts(
-    gCRISPRi.dCas9_KRAB_clone_2.H19_guide_1.batch_2 -
-        gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_2,
-    levels=design)
-fit2 <- contrasts.fit(fit, con)
-fit2 <- eBayes(fit2, robust=TRUE)
-summary(decideTests(fit2))
-WRITE(fit2, fname)
-```
-
-Repeating with a log-fold change threshold of 0.5.
-
-```{r, eval=FALSE, ref.label="progenitor", eval=FALSE}
-```
 
 Testing for DE between H19 guide 2 and negative guide 1.
 
-```{r, eval=FALSE}
+```{r}
 fname <- "CRISPRi_H19.2_vs_negguide1"
 con <- makeContrasts(
     gCRISPRi.dCas9_KRAB_clone_2.H19_guide_2.batch_2 -
@@ -810,12 +767,12 @@ WRITE(fit2, fname)
 
 Repeating with a log-fold change threshold of 0.5.
 
-```{r, eval=FALSE, ref.label="progenitor"}
+```{r, ref.label="progenitor"}
 ```
 
 Testing for DE between H19 guide 2 and negative guide 2.
 
-```{r, eval=FALSE}
+```{r}
 fname <- "CRISPRi_H19.2_vs_negguide2"
 con <- makeContrasts(
     gCRISPRi.dCas9_KRAB_clone_2.H19_guide_2.batch_2 -
@@ -829,9 +786,8 @@ WRITE(fit2, fname)
 
 Repeating with a log-fold change threshold of 0.5.
 
-```{r, eval=FALSE, ref.label="progenitor"}
+```{r, ref.label="progenitor"}
 ```
--->
 
 ## Contrasts for CRISPRi (heterogeneous)
 
@@ -961,12 +917,11 @@ Repeating with a log-fold change threshold of 0.5.
 ```{r, ref.label="progenitor"}
 ```
 
-<!--
 ### Testing for the effect of H19 knockdown
 
 Comparing to the first negative guide.
 
-```{r, eval=FALSE}
+```{r}
 fname <- "CRISPRi_het_H19_vs_Nc.1"
 con <- makeContrasts(
     gCRISPRi.heterogeneous_dCas9_KRAB.H19_guide_2.batch_5
@@ -981,12 +936,12 @@ WRITE(fit2, fname)
 
 Repeating with a log-fold change threshold of 0.5.
 
-```{r, ref.label="progenitor", eval=FALSE}
+```{r, ref.label="progenitor"}
 ```
 
 Comparing to the second negative guide.
 
-```{r, eval=FALSE}
+```{r}
 fname <- "CRISPRi_het_H19_vs_Nc.2"
 con <- makeContrasts(
     gCRISPRi.heterogeneous_dCas9_KRAB.H19_guide_2.batch_5
@@ -1003,7 +958,6 @@ Repeating with a log-fold change threshold of 0.5.
 
 ```{r, ref.label="progenitor", eval=FALSE}
 ```
--->
 
 # Session information
 

@@ -23,7 +23,9 @@ for (mode in c("results_de", "results_lfc")) {
     LNA <- read.table(file.path(mode, "combined_LNA_289.txt"), header=TRUE, stringsAsFactors=FALSE)
     CRISPRi <- read.table(file.path(mode, "combined_CRISPRi_289.txt"), header=TRUE, stringsAsFactors=FALSE)
     CRISPRi.het <- read.table(file.path(mode, "combined_CRISPRi_het_289.txt"), header=TRUE, stringsAsFactors=FALSE)
-    
+    H19 <- read.table(file.path(mode, "combined_CRISPRi_H19.txt"), header=TRUE, stringsAsFactors=FALSE)
+    H19.het <- read.table(file.path(mode, "combined_CRISPRi_het_H19.txt"), header=TRUE, stringsAsFactors=FALSE)
+ 
     combined.p <- c(siRNA$P.Value, LNA$P.Value, CRISPRi$P.Value, CRISPRi.het$P.Value)
     is.sig <- p.adjust(combined.p, method="BH") <= 0.05
     threshold <- max(combined.p[is.sig])
@@ -57,11 +59,15 @@ for (mode in c("results_de", "results_lfc")) {
                     which(rownames(CRISPRi.het)=="ENSG00000234771"), threshold=threshold, ylim=ylim)
         dev.off()
 
-#        H19 <- read.table(file.path(mode, "combined_CRISPRi_H19.txt"), header=TRUE, stringsAsFactors=FALSE)
-#        pdf(sprintf("pics/CRISPRi_volcano_H19_%s.pdf", extra))
-#        makeVolcano(H19$P.Value, (H19$Versus1.logFC + H19$Versus2.logFC)/2,
-#                    which(H19$ENSEMBL=="ENSG00000130600"), threshold=threshold, ylim=ylim)
-#        dev.off()
+        pdf(sprintf("pics/CRISPRi_volcano_H19_%s.pdf", extra))
+        makeVolcano(H19$P.Value, (H19$Versus1.logFC + H19$Versus2.logFC)/2,
+                    which(rownames(H19)=="ENSG00000130600"), threshold=threshold, ylim=ylim)
+        dev.off()
+
+        pdf(sprintf("pics/CRISPRi_het_volcano_H19_%s.pdf", extra))
+        makeVolcano(H19.het$P.Value, (H19.het$Versus1.logFC + H19.het$Versus2.logFC)/2,
+                    which(rownames(H19.het)=="ENSG00000130600"), threshold=threshold, ylim=ylim)
+        dev.off()
     }
 
     # Also comparing controls.

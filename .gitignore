@@ -12,11 +12,9 @@
 *.bed
 *.html
 
+analysis/differential/*.md
 analysis/differential/figure/
-analysis/differential/kegg.md
-analysis/differential/old_kegg.md
 analysis/differential/pathways/
-analysis/differential/ref.md
 analysis/differential/results_de/
 analysis/differential/results_lfc/
 analysis/genomic/hg19.ensGene

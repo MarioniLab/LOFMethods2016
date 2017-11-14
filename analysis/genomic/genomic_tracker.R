@@ -1,5 +1,5 @@
 stuff <- read.table("../differential/results_lfc/combined_clones.txt", header=TRUE,stringsAsFactors=FALSE)
-chosen <- stuff$ENSEMBL[stuff$adj.P.Val==0]
+chosen <- rownames(stuff)[stuff$adj.P.Val==0]
 
 ################### Integrating ChIP-seq data (O'Geen) #######################
 

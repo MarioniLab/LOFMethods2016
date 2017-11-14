@@ -759,6 +759,7 @@ con <- makeContrasts(
     gCRISPRi.dCas9_KRAB_clone_2.H19_guide_2.batch_2 -
         gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_1.batch_2,
     levels=design)
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -778,6 +779,7 @@ con <- makeContrasts(
     gCRISPRi.dCas9_KRAB_clone_2.H19_guide_2.batch_2 -
         gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_2,
     levels=design)
+colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
 summary(decideTests(fit2))
@@ -956,7 +958,7 @@ WRITE(fit2, fname)
 
 Repeating with a log-fold change threshold of 0.5.
 
-```{r, ref.label="progenitor", eval=FALSE}
+```{r, ref.label="progenitor"}
 ```
 
 # Session information

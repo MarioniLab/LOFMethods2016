@@ -15,7 +15,7 @@ LNA <- LNA[LNA$adj.P.Val <= 0.05,]
 CRISPRi$adj.P.Val <- adj.p[,3]
 CRISPRi <- CRISPRi[CRISPRi$adj.P.Val <= 0.05,]
 
-write.table(file=file.path(mode, "SUPP_combined_CRISPRi_het_289.txt"), CRISPRi.het, row.names=FALSE, sep="\t", quote=FALSE) 
-write.table(file=file.path(mode, "SUPP_combined_LNA_289.txt"), LNA, row.names=FALSE, sep="\t", quote=FALSE) 
-write.table(file=file.path(mode, "SUPP_combined_CRISPRi_289.txt"), CRISPRi, row.names=FALSE, sep="\t", quote=FALSE) 
+write.table(file=file.path(mode, "SUPP_combined_CRISPRi_het_289.txt"), CRISPRi.het, col.names=NA, sep="\t", quote=FALSE) 
+write.table(file=file.path(mode, "SUPP_combined_LNA_289.txt"), LNA, col.names=NA, sep="\t", quote=FALSE) 
+write.table(file=file.path(mode, "SUPP_combined_CRISPRi_289.txt"), CRISPRi, col.names=NA, sep="\t", quote=FALSE) 
 

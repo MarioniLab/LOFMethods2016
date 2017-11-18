@@ -33,7 +33,7 @@ for (mode in c("results_de", "results_lfc")) {
 
     in.all <- rowSums(all.choices)==3L
     write.table(file=file.path(mode, "combined_clones.txt"), sep="\t", quote=FALSE, col.names=NA,
-                data.frame(clone2$Symbol, row.names=rownames(clone2),
+                data.frame(Symbol=clone2$Symbol, row.names=rownames(clone2),
                            clone1.logFC=clone1$logFC, clone2.logFC=clone2$logFC, clone3.logFC=clone3$logFC, 
                            adj.P.Val=ifelse(in.all, 0, 1)))
    

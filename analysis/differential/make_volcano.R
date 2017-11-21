@@ -23,12 +23,18 @@ for (mode in c("results_de", "results_lfc")) {
     LNA <- read.table(file.path(mode, "combined_LNA_289.txt"), header=TRUE, stringsAsFactors=FALSE)
     CRISPRi <- read.table(file.path(mode, "combined_CRISPRi_289.txt"), header=TRUE, stringsAsFactors=FALSE)
     CRISPRi.het <- read.table(file.path(mode, "combined_CRISPRi_het_289.txt"), header=TRUE, stringsAsFactors=FALSE)
-    H19 <- read.table(file.path(mode, "combined_CRISPRi_H19.txt"), header=TRUE, stringsAsFactors=FALSE)
-    H19.het <- read.table(file.path(mode, "combined_CRISPRi_het_H19.txt"), header=TRUE, stringsAsFactors=FALSE)
  
     combined.p <- c(siRNA$P.Value, LNA$P.Value, CRISPRi$P.Value, CRISPRi.het$P.Value)
     is.sig <- p.adjust(combined.p, method="BH") <= 0.05
     threshold <- max(combined.p[is.sig])
+    saveRDS(file=sprintf("threshold_%s_289.rds", nextra), threshold)
+
+    H19 <- read.table(file.path(mode, "combined_CRISPRi_H19.txt"), header=TRUE, stringsAsFactors=FALSE)
+    H19.het <- read.table(file.path(mode, "combined_CRISPRi_het_H19.txt"), header=TRUE, stringsAsFactors=FALSE)
+    h19.p <- c(H19$P.Value, H19.het$P.Value)
+    h19.sig <- p.adjust(h19.p, method="BH") <= 0.05
+    h19.threshold <- max(h19.p[h19.sig])
+    saveRDS(file=sprintf("threshold_%s_H19.rds", nextra), h19.threshold)
 
     for (zoom in c(TRUE, FALSE)) {
         if (zoom) {
@@ -61,12 +67,12 @@ for (mode in c("results_de", "results_lfc")) {
 
         pdf(sprintf("pics/CRISPRi_volcano_H19_%s.pdf", extra))
         makeVolcano(H19$P.Value, (H19$Versus1.logFC + H19$Versus2.logFC)/2,
-                    which(rownames(H19)=="ENSG00000130600"), threshold=threshold, ylim=ylim)
+                    which(rownames(H19)=="ENSG00000130600"), threshold=h19.threshold, ylim=ylim)
         dev.off()
 
         pdf(sprintf("pics/CRISPRi_het_volcano_H19_%s.pdf", extra))
         makeVolcano(H19.het$P.Value, (H19.het$Versus1.logFC + H19.het$Versus2.logFC)/2,
-                    which(rownames(H19.het)=="ENSG00000130600"), threshold=threshold, ylim=ylim)
+                    which(rownames(H19.het)=="ENSG00000130600"), threshold=h19.threshold, ylim=ylim)
         dev.off()
     }
 
@@ -74,7 +80,7 @@ for (mode in c("results_de", "results_lfc")) {
     LNAcon <- read.table(file.path(mode, "LNA_controlB_vs_trans.txt"), header=TRUE, stringsAsFactors=FALSE)
     CRISPRicon <- read.table(file.path(mode, "CRISPRi_clone2_vs_cells_I.txt"), header=TRUE, stringsAsFactors=FALSE)
     CRISPRi.hetcon <- read.table(file.path(mode, "CRISPRi_het_BFP_vs_cells.txt"), header=TRUE, stringsAsFactors=FALSE)
-    flowthresh <- readRDS(sprintf("threshold_%s.rds", nextra))
+    flowthresh <- readRDS(sprintf("threshold_%s_control.rds", nextra))
 
     lna.sig <- LNAcon$P.Value <= flowthresh
     crispri.sig <- CRISPRicon$P.Value <= flowthresh

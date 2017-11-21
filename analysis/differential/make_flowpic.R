@@ -56,7 +56,7 @@ for (mode in c("results_de", "results_lfc")) {
                                Het.Guide1vGuide2="CRISPRi_het_Nc.1_vs_Nc.2.txt"
                                ))
     all.nDE <- de.out$numbers
-    saveRDS(de.out$threshold, paste0("threshold_", extra, ".rds"))
+    saveRDS(de.out$threshold, paste0("threshold_", extra, "_control.rds"))
 
     ############################################################################
     # Generates a flow diagram for CRISPRi (clonal).

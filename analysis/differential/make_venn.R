@@ -100,9 +100,7 @@ for (mode in c("results_de", "results_lfc")) {
     LNA <- LNA[ml,]
     CRISPRi <- CRISPRi[mc,]
 
-    combined.p <- c(CRISPRi.het$P.Value, LNA$P.Value, CRISPRi$P.Value)
-    is.sig <- p.adjust(combined.p, method="BH") <= 0.05
-    all.choices <- matrix(is.sig, nrow=nrow(CRISPRi.het))
+    all.choices <- cbind(CRISPRi.het$P.Value, LNA$P.Value, CRISPRi$P.Value) <= readRDS(paste0("threshold_", extra, "_289.rds"))
     colnames(all.choices) <- c("CRISPRi.het", "LNA", "CRISPRi")
 
     library(limma)
@@ -113,7 +111,7 @@ for (mode in c("results_de", "results_lfc")) {
     ####################################################
     # Make a Venn diagram of the siRNA comparisons.
 
-    threshold <- readRDS(paste0("threshold_", extra, ".rds"))
+    threshold <- readRDS(paste0("threshold_", extra, "_control.rds"))
     Ambionv289 <- read.table(file.path(mode, "siRNA_289_vs_Ambion.txt"), header=TRUE, stringsAsFactors=FALSE)
     AmbionvCells <- read.table(file.path(mode, "siRNA_Ambion_vs_cells.txt"), header=TRUE, stringsAsFactors=FALSE)
     Dharmaconv289 <- read.table(file.path(mode, "siRNA_289_vs_Dharmacon.txt"), header=TRUE, stringsAsFactors=FALSE)

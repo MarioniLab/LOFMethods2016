@@ -19,8 +19,8 @@ Setting up a function to do this quickly and efficiently for each contrast.
 dir.create("pathways", showWarning=FALSE)
 dir.create("pathways/results_de", showWarning=FALSE)
 dir.create("pathways/results_lfc", showWarning=FALSE)
-de_threshold <- readRDS("threshold_de.rds")
-lfc_threshold <- readRDS("threshold_lfc.rds")
+de_threshold <- readRDS("threshold_de_control.rds")
+lfc_threshold <- readRDS("threshold_lfc_control.rds")
 
 require(limma)
 require(org.Hs.eg.db)

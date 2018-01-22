@@ -240,7 +240,7 @@ WRITE(fit2, fname, lfc=TRUE)
 
 ## Contrasts for siRNA
 
-### Effect of siRNA transfection plus any sequence-dependent off-target effects
+### Effect of siRNA transfection plus off-target effects
 
 Testing for DE between Ambion control siRNA and cells.
 
@@ -269,6 +269,54 @@ fname <- "siRNA_Dharmacon_vs_cells"
 con <- makeContrasts(
     gRNA_interference.wild_type_genotype.Dharmacon_control.batch_1
          - gnone.wild_type_genotype.none.batch_1,
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+### Total off-target effects with negative control siRNAs
+
+Testing for DE between Ambion control siRNA and the transfection control.
+Note how this is done indirectly to avoid comparing between batches.
+
+```{r}
+fname <- "siRNA_Ambion_vs_trans"
+con <- makeContrasts(
+    (gRNA_interference.wild_type_genotype.Ambion_control.batch_1
+        - gnone.wild_type_genotype.none.batch_1) - 
+    (gLNA.wild_type_genotype.Transfection_control.batch_4
+            - gnone.wild_type_genotype.none.batch_4),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+Testing for DE between Dharmacon control siRNA and the transfection control. 
+Again, this is done indirectly.
+
+```{r}
+fname <- "siRNA_Dharmacon_vs_trans"
+con <- makeContrasts(
+    (gRNA_interference.wild_type_genotype.Dharmacon_control.batch_1
+         - gnone.wild_type_genotype.none.batch_1) - 
+    (gLNA.wild_type_genotype.Transfection_control.batch_4
+            - gnone.wild_type_genotype.none.batch_4),
     levels=design)
 colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
@@ -370,7 +418,7 @@ Repeating with a log-fold change threshold of 0.5.
 ```{r, ref.label="progenitor"}
 ```
 
-### Effect of LNA transfection plus off-target effects
+### Total off-target effects with negative control LNAs 
 
 Testing for DE between LNA control A and transfected cells.
 

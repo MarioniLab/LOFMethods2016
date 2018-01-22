@@ -45,8 +45,8 @@ for (mode in c("results_de", "results_lfc")) {
                                ConAvConB="LNA_controlA_vs_controlB.txt",
 #                               LNA289.2vConA="LNA_289.2_vs_controlA.txt",
 #                               LNA289.2vConB="LNA_289.2_vs_controlB.txt",
-                               AmbionvCells="siRNA_Ambion_vs_cells.txt",
-                               DharmaconvCells="siRNA_Dharmacon_vs_cells.txt",
+                               AmbionvTrans="siRNA_Ambion_vs_trans.txt",
+                               DharmaconvTrans="siRNA_Dharmacon_vs_trans.txt",
                                AmbionvDharmacon="siRNA_Ambion_vs_Dharmacon.txt",
 #                               si289vAmbion="siRNA_289_vs_Ambion.txt",
 #                               si289vDharmacon="siRNA_289_vs_Dharmacon.txt",
@@ -366,6 +366,10 @@ for (mode in c("results_de", "results_lfc")) {
     text(last.pos + box.sides/2, mid.height + box.sides/2, "Cells", cex=1.4)
 
     last.pos <- last.pos + shift
+    rect(last.pos, mid.height, last.pos + box.sides, mid.height + box.sides, col="salmon")
+    text(last.pos + box.sides/2, mid.height + box.sides/2, "Transfection\ncontrol", cex=1.4)
+
+    last.pos <- last.pos + shift
     upper.height <- mid.height + 10
     rect(last.pos, upper.height, last.pos + box.sides, upper.height + box.sides, col="salmon")
     text(last.pos + box.sides/2, upper.height + box.sides/2, "Ambion\ncontrol", cex=1.4)
@@ -385,14 +389,20 @@ for (mode in c("results_de", "results_lfc")) {
 #                                   si289vDharmacon="siRNA_289_vs_Dharmacon.txt"))
 
     last.pos <- 0
-    nDE <- all.nDE[["AmbionvCells"]]
+    nDE <- all.nDE[["TransvCells"]]
+    lwidth <- max(0.1, nDE/scaling)
+    rect(last.pos + box.sides, mid.height + box.sides/2 - lwidth/2, last.pos + shift, mid.height + box.sides/2 + lwidth/2, col="black", border=NA) 
+    text(last.pos + (shift+box.sides)/2, mid.height + box.sides/2 - lwidth/2, pos=1, nDE, cex=1.4)
+
+    last.pos <- last.pos + shift
+    nDE <- all.nDE[["AmbionvTrans"]]
     lwidth <- max(0.1, nDE/scaling)
     polygon(rep(c(last.pos + box.sides, last.pos + shift), each=2),
             c(mid.height + box.sides, mid.height + box.sides - lwidth, upper.height + box.sides/2 - lwidth/2, upper.height + box.sides/2 + lwidth/2),
             col="black", border=NA) 
     textAtMid(last.pos + box.sides, mid.height + box.sides, last.pos + shift, upper.height + box.sides/2 + lwidth/2, nDE, cex=1.4, pos=3, adj=0.5)
 
-    nDE <- all.nDE[["DharmaconvCells"]]
+    nDE <- all.nDE[["DharmaconvTrans"]]
     lwidth <- max(0.1, nDE/scaling)
     polygon(rep(c(last.pos + box.sides, last.pos + shift), each=2),
             c(mid.height + lwidth, mid.height, lower.height + box.sides/2 - lwidth/2, lower.height + box.sides/2 + lwidth/2),

@@ -113,20 +113,20 @@ for (mode in c("results_de", "results_lfc")) {
 
     threshold <- readRDS(paste0("threshold_", extra, "_control.rds"))
     Ambionv289 <- read.table(file.path(mode, "siRNA_289_vs_Ambion.txt"), header=TRUE, stringsAsFactors=FALSE)
-    AmbionvCells <- read.table(file.path(mode, "siRNA_Ambion_vs_cells.txt"), header=TRUE, stringsAsFactors=FALSE)
+    AmbionvTrans <- read.table(file.path(mode, "siRNA_Ambion_vs_trans.txt"), header=TRUE, stringsAsFactors=FALSE)
     Dharmaconv289 <- read.table(file.path(mode, "siRNA_289_vs_Dharmacon.txt"), header=TRUE, stringsAsFactors=FALSE)
-    DharmaconvCells <- read.table(file.path(mode, "siRNA_Dharmacon_vs_cells.txt"), header=TRUE, stringsAsFactors=FALSE)
+    DharmaconvTrans <- read.table(file.path(mode, "siRNA_Dharmacon_vs_trans.txt"), header=TRUE, stringsAsFactors=FALSE)
     AmbionvDharmacon <- read.table(file.path(mode, "siRNA_Ambion_vs_Dharmacon.txt"), header=TRUE, stringsAsFactors=FALSE)
 
     common.order <- sort(rownames(Ambionv289))
     Ambionv289 <- Ambionv289[match(common.order, rownames(Ambionv289)),]
-    AmbionvCells <- AmbionvCells[match(common.order, rownames(AmbionvCells)),]
+    AmbionvTrans <- AmbionvTrans[match(common.order, rownames(AmbionvTrans)),]
     Dharmaconv289 <- Dharmaconv289[match(common.order, rownames(Dharmaconv289)),]
-    DharmaconvCells <- DharmaconvCells[match(common.order, rownames(DharmaconvCells)),]
+    DharmaconvTrans <- DharmaconvTrans[match(common.order, rownames(DharmaconvTrans)),]
     AmbionvDharmacon <- AmbionvDharmacon[match(common.order, rownames(AmbionvDharmacon)),]
 
-    is.sig <- cbind(AmbionvCells=AmbionvCells$P.Value <= threshold, 
-                    DharmaconvCells=DharmaconvCells$P.Value <= threshold) 
+    is.sig <- cbind(AmbionvTrans=AmbionvTrans$P.Value <= threshold, 
+                    DharmaconvTrans=DharmaconvTrans$P.Value <= threshold) 
     pdf(sprintf("pics/venn_siRNA_Ambion_Dharmacon_vs_Cells_%s.pdf", extra))
     vennDiagram(is.sig)
     dev.off()

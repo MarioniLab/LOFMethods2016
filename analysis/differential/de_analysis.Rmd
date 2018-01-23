@@ -86,7 +86,9 @@ Generating a `DGEList` object.
 require(edgeR)
 y <- DGEList(all.counts)
 y$samples$group <- metadata$Condition
+y$samples$block <- paste0(metadata$Batch, metadata$Experiment)
 table(y$samples$group)
+table(y$samples$block)
 ```
 
 # Data exploration
@@ -171,18 +173,27 @@ y$genes <- data.frame(Symbol=symb, row.names=rownames(y))
 
 # Modelling the mean-variance relationship
 
-Setting up a design matrix.
-We use a one-way layout where each group gets its own coefficient in the matrix.
+We use an additive model where each group gets its own coefficient in the matrix.
 We also add blocking factors for the various experimental terms, including the condition and the batch.
-(The first factor for each batch needs to be removed to achieve full rank.
-This is except for the first batch, where the blocking factor is automatically removed by `model.matrix`.)
 
 ```{r}
-block <- paste0(metadata$Batch, metadata$Experiment)
-g <- factor(metadata$Condition)
+g <- factor(y$samples$group)
+block <- factor(y$samples$block)
 design <- model.matrix(~0 + g + block)
+dim(design)
+```
+
+The first `block` level for each batch needs to be removed to achieve full rank.
+(This assumes that each block shares at least 2 groups with every other block in the same batch.)
+This is except for the first batch, where the first `block` level is automatically removed by `model.matrix`.
+
+```{r}
+QR <- qr(design)
+QR$rank # not full rank
 design <- design[,! colnames(design) %in% c("block21", "block36", "block41", "block52")]
 dim(design)
+QR <- qr(design)
+QR$rank # full rank
 ```
 
 Modelling the mean-variance trend with `voom`.

@@ -1,0 +1,941 @@
+---
+title: Checking for proper control of the FDR
+author: Aaron Lun
+date: 23 January 2018
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    depth: 3
+    number_sections: true
+    theme: united
+    highlight: tango
+    fig_caption: false
+---
+
+```{r, echo=FALSE, results='hide'}
+knitr::opts_chunk$set(error=FALSE, message=FALSE, warning=FALSE)
+knitr::opts_knit$set(width=100)
+options(width=100)
+if (!exists(".use.local")) { .use.local <- TRUE }
+```
+
+# Introduction
+
+## Processed data loading
+
+We load the data object that we previously generated in our earlier DE analysis.
+
+```{r}
+library(edgeR)
+y <- readRDS("../differential/object.rds")
+y$samples
+```
+
+We generate a new design matrix where each group is split into two partitions.
+This is done based on the blocking levels (11-14; 21-24; 36-39; 41-44; 52-56; and ignoring 15 and 19 as they have so few samples).
+The aim is to do a "differences of differences" analysis, where we compare between samples in the same block, and compare the differences between partitions.
+
+```{r}
+first.group <- c("11", "12", "21", "22", "36", "37", "41", "42", "52", "53")
+in.first <- y$samples$block %in% first.group
+y$samples$group <- paste0(y$samples$group, ifelse(in.first, "A", "B"))
+```
+
+The aim is to test for differential expression between sets of replicates.
+There should be no significant genes at a FDR of 5% (at least, for 5% of the comparisons).
+
+# Modelling the mean-variance relationship
+
+We use an additive model where each group gets its own coefficient in the matrix.
+We also add blocking factors for the various experimental terms, including the condition and the batch.
+
+```{r}
+block <- factor(y$samples$block)
+g <- factor(y$samples$group)
+design <- model.matrix(~0 + g + block)
+```
+
+The first factor for each batch needs to be removed to achieve full rank.
+This is except for the first batch, where the blocking factor is automatically removed by `model.matrix`.
+
+```{r}
+QR <- qr(design)
+keep <- QR$pivot[seq_len(QR$rank)]
+colnames(design)[-keep]
+design <- design[,keep]
+dim(design)
+```
+
+Modelling the mean-variance trend with `voom`.
+Also computing library-specific weights to downweight any outlier libraries within each group.
+
+```{r, fig.width=10, fig.height=6}
+v.all <- voomWithQualityWeights(y, design, plot=TRUE)
+```
+
+Fitting the linear model with robust empirical Bayes shrinkage to stabilize the variance estimates.
+
+```{r}
+fit <- lmFit(v.all, design)
+fit <- eBayes(fit, robust=TRUE)
+plotSA(fit)
+```
+
+# Testing for differential expression
+
+## Setting up output folders
+
+Setting up some output folders, and some functions to store results.
+
+```{r}
+dir.create("results_de", showWarning=FALSE)
+dir.create("results_lfc", showWarning=FALSE)
+WRITE <- function(fit, fname, lfc=FALSE) {
+    fname <- paste0(fname, ".txt")
+    if (lfc) {
+        res <- topTreat(fit, n=Inf, sort.by="p")
+        fname <- file.path("results_lfc", fname)
+    } else {
+        res <- topTable(fit, n=Inf, sort.by="p")
+        fname <- file.path("results_de", fname)
+    }
+    write.table(file=fname, res, col.names=NA, quote=FALSE, sep="\t")
+    head(res)
+}
+```
+
+```{r progenitor, echo=FALSE, eval=FALSE}
+fit2 <- contrasts.fit(fit, con)
+fit2 <- treat(fit2, lfc=0.5, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname, lfc=TRUE)
+```
+
+It is worth stressing that we are comparing the between-partition differences of between-group differences.
+We will do so for every pairwise comparison between groups that we used in the actual DE analysis.
+The exception is for comparisons where there are no samples in either partition; or for comparisons that were already comparisons between differences or differences.
+
+## Contrasts for siRNA
+
+### Effect of siRNA transfection plus off-target effects
+
+Testing for DE between Ambion control siRNA and cells.
+
+```{r}
+fname <- "siRNA_Ambion_vs_cells"
+con <- makeContrasts(
+    (gRNA_interference.wild_type_genotype.Ambion_control.batch_1A 
+        - gnone.wild_type_genotype.none.batch_1A) -
+    (gRNA_interference.wild_type_genotype.Ambion_control.batch_1B 
+        - gnone.wild_type_genotype.none.batch_1B),        
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+Testing for DE between Dharmacon control siRNA and cells.
+
+```{r}
+fname <- "siRNA_Dharmacon_vs_cells"
+con <- makeContrasts(
+    (gRNA_interference.wild_type_genotype.Dharmacon_control.batch_1A
+         - gnone.wild_type_genotype.none.batch_1A) -
+    (gRNA_interference.wild_type_genotype.Dharmacon_control.batch_1B
+         - gnone.wild_type_genotype.none.batch_1B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+<!--
+I'm not doing differences of differences of differences, thank you very much.
+
+### Total off-target effects with negative control siRNAs
+
+Testing for DE between Ambion control siRNA and the transfection control.
+Note how this is done indirectly to avoid comparing between batches.
+
+```{r, eval=FALSE}
+fname <- "siRNA_Ambion_vs_trans"
+con <- makeContrasts(
+    (gRNA_interference.wild_type_genotype.Ambion_control.batch_1
+        - gnone.wild_type_genotype.none.batch_1) - 
+    (gLNA.wild_type_genotype.Transfection_control.batch_4
+            - gnone.wild_type_genotype.none.batch_4),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, eval=FALSE, ref.label="progenitor"}
+```
+
+Testing for DE between Dharmacon control siRNA and the transfection control. 
+Again, this is done indirectly.
+
+```{r, eval=FALSE}
+fname <- "siRNA_Dharmacon_vs_trans"
+con <- makeContrasts(
+    (gRNA_interference.wild_type_genotype.Dharmacon_control.batch_1
+         - gnone.wild_type_genotype.none.batch_1) - 
+    (gLNA.wild_type_genotype.Transfection_control.batch_4
+            - gnone.wild_type_genotype.none.batch_4),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, eval=FALSE, ref.label="progenitor"}
+```
+-->
+
+### Minimal sequence-dependent off-target effects
+
+Testing for DE between siRNA controls.
+
+```{r}
+fname <- "siRNA_Ambion_vs_Dharmacon"
+con <- makeContrasts(
+    (gRNA_interference.wild_type_genotype.Ambion_control.batch_1A
+        - gRNA_interference.wild_type_genotype.Dharmacon_control.batch_1A) -
+    (gRNA_interference.wild_type_genotype.Ambion_control.batch_1B
+        - gRNA_interference.wild_type_genotype.Dharmacon_control.batch_1B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+### Effect of actual knockdown plus any off-target effects
+
+Testing for DE between 289 siRNA and the Ambion control.
+
+```{r}
+fname <- "siRNA_289_vs_Ambion"
+con <- makeContrasts(
+    (gRNA_interference.wild_type_genotype.289_siRNA.batch_1A
+        - gRNA_interference.wild_type_genotype.Ambion_control.batch_1A) -
+    (gRNA_interference.wild_type_genotype.289_siRNA.batch_1B
+        - gRNA_interference.wild_type_genotype.Ambion_control.batch_1B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+Testing for DE between 289 siRNA and the Dharmacon control.
+
+```{r}
+fname <- "siRNA_289_vs_Dharmacon"
+con <- makeContrasts(
+    (gRNA_interference.wild_type_genotype.289_siRNA.batch_1A
+        - gRNA_interference.wild_type_genotype.Dharmacon_control.batch_1A) -
+    (gRNA_interference.wild_type_genotype.289_siRNA.batch_1B
+        - gRNA_interference.wild_type_genotype.Dharmacon_control.batch_1B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+## Contrasts for LNA
+
+### Effect of transfection with MAX reagent
+
+Testing for DE between transfected cels and non-transfected cells.
+
+```{r}
+fname <- "LNA_trans_vs_cells"
+con <- makeContrasts(
+    (gLNA.wild_type_genotype.Transfection_control.batch_4A
+        - gnone.wild_type_genotype.none.batch_4A) -
+    (gLNA.wild_type_genotype.Transfection_control.batch_4B
+        - gnone.wild_type_genotype.none.batch_4B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+### Total off-target effects with negative control LNAs 
+
+Testing for DE between LNA control A and transfected cells.
+
+```{r}
+fname <- "LNA_controlA_vs_trans"
+con <- makeContrasts(
+    (gLNA.wild_type_genotype.Negative_control_A.batch_4A
+        - gLNA.wild_type_genotype.Transfection_control.batch_4A) -
+    (gLNA.wild_type_genotype.Negative_control_A.batch_4B
+        - gLNA.wild_type_genotype.Transfection_control.batch_4B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+Testing for DE between LNA control B and transfected cells.
+
+```{r}
+fname <- "LNA_controlB_vs_trans"
+con <- makeContrasts(
+    (gLNA.wild_type_genotype.Negative_control_B.batch_4A
+        - gLNA.wild_type_genotype.Transfection_control.batch_4A) -
+    (gLNA.wild_type_genotype.Negative_control_B.batch_4B
+        - gLNA.wild_type_genotype.Transfection_control.batch_4B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+### Minimal effect of sequence-dependent off-target effects
+
+Testing for DE between LNA controls A and B.
+
+```{r}
+fname <- "LNA_controlA_vs_controlB"
+con <- makeContrasts(
+    (gLNA.wild_type_genotype.Negative_control_A.batch_4A
+        - gLNA.wild_type_genotype.Negative_control_B.batch_4A) -
+    (gLNA.wild_type_genotype.Negative_control_A.batch_4B
+        - gLNA.wild_type_genotype.Negative_control_B.batch_4B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+### Effect of actual knockdown plus any off-target effects
+
+Testing for DE between 289 LNA2 knockdown and control B.
+
+```{r}
+fname <- "LNA_289.2_vs_controlB"
+con <- makeContrasts(
+    (gLNA.wild_type_genotype.289_LNA.batch_1A
+        - gLNA.wild_type_genotype.Negative_control_B.batch_1A) -
+    (gLNA.wild_type_genotype.289_LNA.batch_1B
+        - gLNA.wild_type_genotype.Negative_control_B.batch_1B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+## Contrasts for CRISPRi (clonal)
+
+### Effect of dCas9-KRAB expression and cloning
+
+Testing for DE between dCas9-expressing clone 2 and cells (first batch).
+
+```{r}
+fname <- "CRISPRi_clone2_vs_cells_I"
+con <- makeContrasts(
+    (gCRISPRi.dCas9_KRAB_clone_2.none.batch_1A
+        - gnone.wild_type_genotype.none.batch_1A) -
+    (gCRISPRi.dCas9_KRAB_clone_2.none.batch_1B
+        - gnone.wild_type_genotype.none.batch_1B),
+    levels=design)
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+<!--
+gnone.wild_type_genotype.none.batch_3B does not exist, hence all of the following is commented out.
+
+Testing for DE between dCas9-expressing clone 2 and cells (second batch).
+
+```{r, eval=FALSE}
+fname <- "CRISPRi_clone2_vs_cells_II"
+con <- makeContrasts(
+    gCRISPRi.dCas9_KRAB_clone_2.none.batch_3
+        - gnone.wild_type_genotype.none.batch_3, 
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, eval=FALSE, ref.label="progenitor"}
+```
+
+Testing for DE between dCas9-expressing clone 1 and cells.
+
+```{r, eval=FALSE}
+fname <- "CRISPRi_clone1_vs_cells"
+con <- makeContrasts(
+    gCRISPRi.dCas9_KRAB_clone_1.none.batch_3
+        - gnone.wild_type_genotype.none.batch_3,
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, eval=FALSE, ref.label="progenitor"}
+```
+
+Testing for DE between dCas9-expressing clone 3 and cells.
+
+```{r, eval=FALSE}
+fname <- "CRISPRi_clone3_vs_cells"
+con <- makeContrasts(
+    gCRISPRi.dCas9_KRAB_clone_3.none.batch_3
+        - gnone.wild_type_genotype.none.batch_3,
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, eval=FALSE, ref.label="progenitor"}
+```
+-->
+
+### Minimal founder effects of cloning
+
+Testing for DE between clones 1 and 2.
+
+```{r}
+fname <- "CRISPRi_clone1_vs_clone2"
+con <- makeContrasts(
+    (gCRISPRi.dCas9_KRAB_clone_1.none.batch_3A
+        - gCRISPRi.dCas9_KRAB_clone_2.none.batch_3A) - 
+    (gCRISPRi.dCas9_KRAB_clone_1.none.batch_3B
+        - gCRISPRi.dCas9_KRAB_clone_2.none.batch_3B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+Testing for DE between clones 1 and 3.
+
+```{r}
+fname <- "CRISPRi_clone1_vs_clone3"
+con <- makeContrasts(
+    (gCRISPRi.dCas9_KRAB_clone_1.none.batch_3A
+        - gCRISPRi.dCas9_KRAB_clone_3.none.batch_3A) - 
+    (gCRISPRi.dCas9_KRAB_clone_1.none.batch_3B
+        - gCRISPRi.dCas9_KRAB_clone_3.none.batch_3B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+Testing for DE between clones 2 and 3.
+
+```{r}
+fname <- "CRISPRi_clone2_vs_clone3"
+con <- makeContrasts(
+    (gCRISPRi.dCas9_KRAB_clone_2.none.batch_3A
+        - gCRISPRi.dCas9_KRAB_clone_3.none.batch_3A) - 
+    (gCRISPRi.dCas9_KRAB_clone_2.none.batch_3B
+        - gCRISPRi.dCas9_KRAB_clone_3.none.batch_3B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+### Effect of guide transfection plus off-target effects
+
+Testing for DE between the negative guide 2 and clone 2 (first batch).
+
+```{r}
+fname <- "CRISPRi_negguide2_vs_clone2_I"
+con <- makeContrasts(
+    (gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_1A
+        - gCRISPRi.dCas9_KRAB_clone_2.none.batch_1A) -
+    (gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_1B
+        - gCRISPRi.dCas9_KRAB_clone_2.none.batch_1B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+Testing for DE between the negative guide 2 and clone 2 (second batch).
+
+```{r}
+fname <- "CRISPRi_negguide2_vs_clone2_II"
+con <- makeContrasts(
+    (gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_2A
+        - gCRISPRi.dCas9_KRAB_clone_2.none.batch_2A) - 
+    (gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_2B
+        - gCRISPRi.dCas9_KRAB_clone_2.none.batch_2B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+Testing for DE between the negative guide 1 and clone 2.
+
+```{r}
+fname <- "CRISPRi_negguide1_vs_clone2"
+con <- makeContrasts(
+    (gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_1.batch_2A
+        - gCRISPRi.dCas9_KRAB_clone_2.none.batch_2A) - 
+    (gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_1.batch_2B
+        - gCRISPRi.dCas9_KRAB_clone_2.none.batch_2B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+### Minimal effect of sequence-dependent off-target effects
+
+Testing for DE between guides 1 and 2.
+
+```{r}
+fname <- "CRISPRi_negguide1_vs_negguide2"
+con <- makeContrasts(
+    (gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_1.batch_2A
+        - gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_2A) -
+    (gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_1.batch_2B
+        - gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_2B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+### Effect of actual 289 knockdown plus any off-target effects
+
+Testing for DE between 289 guide 1 and negative guide 2.
+
+```{r}
+fname <- "CRISPRi_289.1_vs_negguide2"
+con <- makeContrasts(
+    (gCRISPRi.dCas9_KRAB_clone_2.289_guide_1.batch_1A
+        - gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_1A) -
+    (gCRISPRi.dCas9_KRAB_clone_2.289_guide_1.batch_1B
+        - gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_1B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+Testing for DE between 289 guide 9 and negative guide 2.
+
+```{r}
+fname <- "CRISPRi_289.9_vs_negguide2"
+con <- makeContrasts(
+    (gCRISPRi.dCas9_KRAB_clone_2.289_guide_9.batch_1A
+        - gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_1A) -
+    (gCRISPRi.dCas9_KRAB_clone_2.289_guide_9.batch_1B
+        - gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_1B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+### Effect of actual H19 knockdown plus any off-target effects
+
+Testing for DE between H19 guide 2 and negative guide 1.
+
+```{r}
+fname <- "CRISPRi_H19.2_vs_negguide1"
+con <- makeContrasts(
+    (gCRISPRi.dCas9_KRAB_clone_2.H19_guide_2.batch_2A -
+        gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_1.batch_2A) -
+    (gCRISPRi.dCas9_KRAB_clone_2.H19_guide_2.batch_2B -
+        gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_1.batch_2B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+Testing for DE between H19 guide 2 and negative guide 2.
+
+```{r}
+fname <- "CRISPRi_H19.2_vs_negguide2"
+con <- makeContrasts(
+    (gCRISPRi.dCas9_KRAB_clone_2.H19_guide_2.batch_2A -
+        gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_2A) -
+    (gCRISPRi.dCas9_KRAB_clone_2.H19_guide_2.batch_2B -
+        gCRISPRi.dCas9_KRAB_clone_2.Negative_control_guide_2.batch_2B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+## Contrasts for CRISPRi (heterogeneous)
+
+### Testing for the effect of dCas9 in heterogeneous populations
+
+Comparing HeLa cells with those that have been transduced and selected for dCas9-KRAB expression in a heterogeneous population.
+
+```{r}
+fname <- "CRISPRi_het_BFP_vs_cells"
+con <- makeContrasts(
+    (gCRISPRi.heterogeneous_dCas9_KRAB.none.batch_5A
+        - gnone.wild_type_genotype.none.batch_5A) -
+    (gCRISPRi.heterogeneous_dCas9_KRAB.none.batch_5B
+        - gnone.wild_type_genotype.none.batch_5B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+### Testing for the effect of control guide transfection
+
+Testing for DE after transfection of negative control to heterogeneous populations.
+
+```{r}
+fname <- "CRISPRi_het_Nc.1_vs_BFP"
+con <- makeContrasts(
+    (gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_1.batch_5A
+        - gCRISPRi.heterogeneous_dCas9_KRAB.none.batch_5A) -
+    (gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_1.batch_5B
+        - gCRISPRi.heterogeneous_dCas9_KRAB.none.batch_5B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+Now for the other guide.
+
+```{r}
+fname <- "CRISPRi_het_Nc.2_vs_BFP"
+con <- makeContrasts(
+    (gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_5A
+        - gCRISPRi.heterogeneous_dCas9_KRAB.none.batch_5A) -
+    (gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_5B
+        - gCRISPRi.heterogeneous_dCas9_KRAB.none.batch_5B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+Testing for DE between the negative guides.
+
+```{r}
+fname <- "CRISPRi_het_Nc.1_vs_Nc.2"
+con <- makeContrasts(
+    (gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_1.batch_5A
+       - gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_5A) -
+    (gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_1.batch_5B
+       - gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_5B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+### Testing for the effect of 289 knockdown
+
+Comparing to the first negative guide.
+
+```{r}
+fname <- "CRISPRi_het_289.9_vs_Nc.1"
+con <- makeContrasts(
+    (gCRISPRi.heterogeneous_dCas9_KRAB.289_guide_9.batch_5A
+        - gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_1.batch_5A) -
+    (gCRISPRi.heterogeneous_dCas9_KRAB.289_guide_9.batch_5B
+        - gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_1.batch_5B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+Comparing to the second negative guide.
+
+```{r}
+fname <- "CRISPRi_het_289.9_vs_Nc.2"
+con <- makeContrasts(
+    (gCRISPRi.heterogeneous_dCas9_KRAB.289_guide_9.batch_5A
+        - gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_5A) -
+    (gCRISPRi.heterogeneous_dCas9_KRAB.289_guide_9.batch_5B
+        - gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_5B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+### Testing for the effect of H19 knockdown
+
+Comparing to the first negative guide.
+
+```{r}
+fname <- "CRISPRi_het_H19_vs_Nc.1"
+con <- makeContrasts(
+    (gCRISPRi.heterogeneous_dCas9_KRAB.H19_guide_2.batch_5A
+        - gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_1.batch_5A) -
+    (gCRISPRi.heterogeneous_dCas9_KRAB.H19_guide_2.batch_5B
+        - gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_1.batch_5B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+Comparing to the second negative guide.
+
+```{r}
+fname <- "CRISPRi_het_H19_vs_Nc.2"
+con <- makeContrasts(
+    (gCRISPRi.heterogeneous_dCas9_KRAB.H19_guide_2.batch_5A
+         - gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_5A) -
+    (gCRISPRi.heterogeneous_dCas9_KRAB.H19_guide_2.batch_5B
+         - gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_5B),
+    levels=design)
+colnames(con) <- fname
+fit2 <- contrasts.fit(fit, con)
+fit2 <- eBayes(fit2, robust=TRUE)
+summary(decideTests(fit2))
+WRITE(fit2, fname)
+```
+
+Repeating with a log-fold change threshold of 0.5.
+
+```{r, ref.label="progenitor"}
+```
+
+# Session information
+
+```{r}
+saveRDS(file="object.rds", y)
+sessionInfo()
+```

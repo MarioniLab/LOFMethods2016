@@ -46,33 +46,27 @@ for (mode in c("results_de", "results_lfc")) {
         }
         
         pdf(sprintf("pics/siRNA_volcano_289_%s.pdf", extra))
-        makeVolcano(siRNA$P.Value, (siRNA$Ambion.logFC + siRNA$Dharmacon.logFC)/2, 
-                    which(rownames(siRNA)=="ENSG00000234771"), threshold=threshold, ylim=ylim)
+        makeVolcano(siRNA$P.Value, siRNA$logFC, which(rownames(siRNA)=="ENSG00000234771"), threshold=threshold, ylim=ylim)
         dev.off()
 
         pdf(sprintf("pics/LNA_volcano_289_%s.pdf", extra))
-        makeVolcano(LNA$P.Value, (LNA$LNAA.logFC + LNA$LNAB.logFC)/2, 
-                    which(rownames(LNA)=="ENSG00000234771"), threshold=threshold, ylim=ylim)
+        makeVolcano(LNA$P.Value, LNA$logFC, which(rownames(LNA)=="ENSG00000234771"), threshold=threshold, ylim=ylim)
         dev.off()
 
         pdf(sprintf("pics/CRISPRi_volcano_289_%s.pdf", extra))
-        makeVolcano(CRISPRi$P.Value, (CRISPRi$Guide1.logFC + CRISPRi$Guide7.logFC)/2,
-                    which(rownames(CRISPRi)=="ENSG00000234771"), threshold=threshold, ylim=ylim)
+        makeVolcano(CRISPRi$P.Value, CRISPRi$logFC, which(rownames(CRISPRi)=="ENSG00000234771"), threshold=threshold, ylim=ylim)
         dev.off()
 
         pdf(sprintf("pics/CRISPRi_het_volcano_289_%s.pdf", extra))
-        makeVolcano(CRISPRi.het$P.Value, (CRISPRi.het$Versus1.logFC + CRISPRi.het$Versus2.logFC)/2,
-                    which(rownames(CRISPRi.het)=="ENSG00000234771"), threshold=threshold, ylim=ylim)
+        makeVolcano(CRISPRi.het$P.Value, CRISPRi.het$logFC, which(rownames(CRISPRi.het)=="ENSG00000234771"), threshold=threshold, ylim=ylim)
         dev.off()
 
         pdf(sprintf("pics/CRISPRi_volcano_H19_%s.pdf", extra))
-        makeVolcano(H19$P.Value, (H19$Versus1.logFC + H19$Versus2.logFC)/2,
-                    which(rownames(H19)=="ENSG00000130600"), threshold=h19.threshold, ylim=ylim)
+        makeVolcano(H19$P.Value, H19$logFC, which(rownames(H19)=="ENSG00000130600"), threshold=h19.threshold, ylim=ylim)
         dev.off()
 
         pdf(sprintf("pics/CRISPRi_het_volcano_H19_%s.pdf", extra))
-        makeVolcano(H19.het$P.Value, (H19.het$Versus1.logFC + H19.het$Versus2.logFC)/2,
-                    which(rownames(H19.het)=="ENSG00000130600"), threshold=h19.threshold, ylim=ylim)
+        makeVolcano(H19.het$P.Value, H19.het$logFC, which(rownames(H19.het)=="ENSG00000130600"), threshold=h19.threshold, ylim=ylim)
         dev.off()
     }
 

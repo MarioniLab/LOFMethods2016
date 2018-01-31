@@ -33,9 +33,9 @@ for (mode in c("results_de", "results_lfc")) {
     }
     
     de.out <- getNumDE(mode, list(
-                               Clone2vCellsI="CRISPRi_clone2_vs_cells_I.txt",
+                               Clone2vCells="CRISPRi_clone2_vs_cells_I.txt",
                                Guide1vClone2="CRISPRi_negguide1_vs_clone2.txt",
-                               Guide2vClone2I="CRISPRi_negguide2_vs_clone2_I.txt",
+                               Guide2vClone2="CRISPRi_negguide2_vs_clone2_II.txt",
                                Guide1vGuide2="CRISPRi_negguide1_vs_negguide2.txt",
 #                               G289.1vGuide2="CRISPRi_289.1_vs_negguide2.txt",
 #                               G289.9vGuide2="CRISPRi_289.9_vs_negguide2.txt",
@@ -95,7 +95,7 @@ for (mode in c("results_de", "results_lfc")) {
 
     # Adding connecting lines.
     last.pos <- 0
-    nDE <- all.nDE[["Clone2vCellsI"]]
+    nDE <- all.nDE[["Clone2vCells"]]
     lwidth <- max(0.1, nDE/scaling)
     rect(last.pos + box.sides, mid.height + box.sides/2 - lwidth/2, last.pos + shift, mid.height + box.sides/2 + lwidth/2, col="black", border=NA) # DE between clone and cells.
     text(last.pos + (shift+box.sides)/2, mid.height + box.sides/2 - lwidth/2, pos=1, nDE, cex=1.4)
@@ -108,7 +108,7 @@ for (mode in c("results_de", "results_lfc")) {
             col="black", border=NA) 
     textAtMid(last.pos + box.sides, mid.height + box.sides, last.pos + shift, upper.height + box.sides/2 + lwidth/2, nDE, cex=1.4, pos=3, adj=0.5)
 
-    nDE <- all.nDE[["Guide2vClone2I"]]
+    nDE <- all.nDE[["Guide2vClone2"]]
     lwidth <- max(0.1, nDE/scaling)
     polygon(rep(c(last.pos + box.sides, last.pos + shift), each=2),
             c(mid.height + lwidth, mid.height, lower.height + box.sides/2 - lwidth/2, lower.height + box.sides/2 + lwidth/2),

@@ -1,13 +1,19 @@
 # LOFMethods2016
 
 Code for Lovorka and Aaron's lncRNA loss-of-function project.
-To reproduce the results:
+To reproduce the main results:
 
 - Enter the `analysis/arrayexpress/` directory and download the SDRF file from ArrayExpress (E-MTAB-5308).
 Also download the processed data and unzip it in the same directory.
 - The `run_order.R` script in `analysis/differential/` executes all the Rmarkdown scripts to perform the DE (`de_analysis.Rmd`) and pathway analyses (`kegg.Rmd`).
 It also executes the various R scripts to create the necessary plots (`make_*.R`).
 This must be done in the correct order.
+- The `fdr_check.Rmd` script in `analysis/validation` performs a series of DE analyses between replicates of the same group, to check that the error rate is properly controlled.
+This should be followed by `run_checker.R`, which will summarize the false positives across all comparisons.
+- The `make_pca.R` script in `analysis/validation` will generate a PCA plot of all samples, colored and shaped according to the group in which each sample belongs.
+
+To integrate our results with other data:
+
 - The `genomic_tracker.R` script in `analysis/genomic/` looks at the genomic context of the DE genes for the CRISPRi comparisons.
 The Bash scripts in `Thakore_peaks` align and call peaks from the Thakore _et al._ data.
 - The `make_h19.R` script in `analysis/h19/` makes a barplot of expression for known target genes of H19.

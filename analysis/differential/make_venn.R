@@ -127,7 +127,7 @@ for (mode in c("results_de", "results_lfc")) {
 
     is.sig <- cbind(AmbionvTrans=AmbionvTrans$P.Value <= threshold, 
                     DharmaconvTrans=DharmaconvTrans$P.Value <= threshold) 
-    pdf(sprintf("pics/venn_siRNA_Ambion_Dharmacon_vs_Cells_%s.pdf", extra))
+    pdf(sprintf("pics/venn_siRNA_Ambion_Dharmacon_vs_Trans_%s.pdf", extra))
     vennDiagram(is.sig)
     dev.off()
 

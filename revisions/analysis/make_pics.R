@@ -84,8 +84,7 @@ dev.off()
 
 ###############################
 
-# Comparisons between positive and negative comparisons.
-
+# Comparisons between positive and negative p-values.
 ref.results <- list(RNAi=read.table("../../analysis/differential/results_lfc/siRNA_Ambion_vs_Dharmacon.txt", header=TRUE),
                     LNA=read.table("../../analysis/differential/results_lfc/LNA_controlA_vs_controlB.txt", header=TRUE),
                     CRISPRi=read.table("../../analysis/differential/results_lfc/CRISPRi_het_Nc.1_vs_Nc.2.txt", header=TRUE))
@@ -95,7 +94,7 @@ GENERATE_CURVE <- function(pos, neg) {
     findInterval(sort(neg$P.Value[rownames(neg) %in% keep]), sort(pos$P.Value[rownames(pos) %in% keep]))
 }
 
-pdf("roc.pdf")
+pdf("pics/roc.pdf")
 rnai <- GENERATE_CURVE(all.results$TOG.RNAi, ref.results$RNAi)
 plot(seq_along(rnai), rnai, type="l", lwd=2, col="purple", xlim=c(0, 100), ylim=c(0, 1000),
      ylab="Number of DE genes upon knockdown", xlab="Number of DE genes between negative controls")
@@ -108,4 +107,52 @@ lines(seq_along(crispri), crispri, lwd=2, col="brown", lty=2)
 
 legend("topleft", col=c("purple", "dodgerblue", "brown", "brown"),
        lwd=2, lty=c(1,1,1,2), legend=c("RNAi (ch-TOG)", "LNA (MALAT1)", "CRISPRi (ch-TOG)", "CRISPRi (MALAT1)"))
+dev.off()
+
+###############################
+
+# Generating MA plots.
+
+FUN <- function(fname, threshold, main) {
+    tab <- read.table(file.path("results_lfc", fname), header=TRUE, stringsAsFactors=FALSE, sep="\t")
+    x <- tab$AveExpr
+    y <- tab$logFC
+    xlim <- range(x)
+    ylim <- range(y)
+    sig <- tab$P.Value < threshold
+    up <- y > 0
+
+    layout(rbind(1, c(2,3,4)), widths=c(3,2,2), heights=c(1,10))
+    old <- par()$mar
+    par(mar=c(0,0,0,0))
+    plot(0,0,axes=FALSE, xlab="", ylab="", xaxt="n", yaxt="n", type="n")
+    text(0,0, main, font=2, cex=1.6)
+
+    par(mar=c(5.1, 4.1, 0, 2.1))
+    smoothScatter(x[!sig], y[!sig], xlim=xlim, ylim=ylim, colramp = colorRampPalette(c("white", "black")),
+                  nrpoints=0, xlab="Average log-expression", ylab="Log-fold change",
+                  cex.axis=1.2, cex.lab=1.6)
+    points(x[sig & up], y[sig & up], col=rgb(1,0,0,0.5), pch=16)
+    points(x[sig & !up], y[sig & !up], col=rgb(0,0,1,0.5), pch=16)
+
+    boxplot(list(`non-DE`=y[!sig],
+                 Up=y[sig & up],
+                 Down=y[sig & !up]), 
+            border=c("black", "red", "blue"), ylab="Log-fold change", 
+            cex.axis=1.2, cex.names=1.4, cex.lab=1.6)
+
+    boxplot(list(`non-DE`=x[!sig],
+                 Up=x[sig & up],
+                 Down=x[sig & !up]), 
+            border=c("black", "red", "blue"), ylab="Average log-expression", 
+            cex.axis=1.2, cex.names=1.4, cex.lab=1.6)
+
+    return(NULL)
+}
+
+pdf("pics/ma.pdf", width=10, height=5)
+FUN("siRNA_TOG.txt", threshold, main="RNAi (ch-TOG)")
+FUN("CRISPRi_TOG.txt", threshold, main="CRISPRi (ch-TOG)")
+FUN("LNA_MALAT1.txt", threshold, main="LNA (MALAT1)")
+FUN("CRISPRi_MALAT1.txt", threshold, main="CRISPRi (MALAT1)")
 dev.off()

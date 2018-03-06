@@ -96,17 +96,26 @@ GENERATE_CURVE <- function(pos, neg) {
 
 pdf("pics/roc.pdf")
 rnai <- GENERATE_CURVE(all.results$TOG.RNAi, ref.results$RNAi)
-plot(seq_along(rnai), rnai, type="l", lwd=2, col="purple", xlim=c(0, 100), ylim=c(0, 1000),
+plot(seq_along(rnai), rnai, type="l", lwd=2, col="purple", xlim=c(0, 100), ylim=c(0, 1000), lty=2,
      ylab="Number of DE genes upon knockdown", xlab="Number of DE genes between negative controls")
-lna <- GENERATE_CURVE(all.results$MALAT1.LNA, ref.results$LNA)
-lines(seq_along(lna), lna, lwd=2, col="dodgerblue")
-crispri <- GENERATE_CURVE(all.results$TOG.CRISPRi, ref.results$CRISPRi)
-lines(seq_along(crispri), crispri, lwd=2, col="brown")
-crispri <- GENERATE_CURVE(all.results$MALAT1.CRISPRi, ref.results$CRISPRi)
-lines(seq_along(crispri), crispri, lwd=2, col="brown", lty=2)
+rnai <- GENERATE_CURVE(read.table("../../analysis/differential/results_lfc/siRNA_289_vs_Dharmacon.txt", header=TRUE), ref.results$RNAi)
+lines(seq_along(rnai), rnai, lwd=3, col="purple", lty=1)
 
-legend("topleft", col=c("purple", "dodgerblue", "brown", "brown"),
-       lwd=2, lty=c(1,1,1,2), legend=c("RNAi (ch-TOG)", "LNA (MALAT1)", "CRISPRi (ch-TOG)", "CRISPRi (MALAT1)"))
+lna <- GENERATE_CURVE(all.results$MALAT1.LNA, ref.results$LNA)
+lines(seq_along(lna), lna, lwd=2, col="dodgerblue", lty=3)
+lna <- GENERATE_CURVE(read.table("../../analysis/differential/results_lfc/LNA_289.2_vs_controlA.txt", header=TRUE), ref.results$LNA)
+lines(seq_along(lna), lna, lwd=3, col="dodgerblue", lty=1)
+
+crispri <- GENERATE_CURVE(all.results$TOG.CRISPRi, ref.results$CRISPRi)
+lines(seq_along(crispri), crispri, lwd=2, col="brown", lty=2)
+crispri <- GENERATE_CURVE(all.results$MALAT1.CRISPRi, ref.results$CRISPRi)
+lines(seq_along(crispri), crispri, lwd=2, col="brown", lty=3)
+crispri <- GENERATE_CURVE(read.table("../../analysis/differential/results_lfc/CRISPRi_het_289.9_vs_Nc.2.txt", header=TRUE), ref.results$CRISPRi)
+lines(seq_along(crispri), crispri, lwd=3, col="brown", lty=1)
+
+legend("topleft", col=c("purple", "purple", "dodgerblue", "dodgerblue", "brown", "brown", "brown"),
+       lwd=2, lty=c(1,2,1,3,1,2,3), 
+       legend=c("RNAi (289)", "RNAi (ch-TOG)", "LNA (289)", "LNA (MALAT1)", "CRISPRi (289)", "CRISPRi (ch-TOG)", "CRISPRi (MALAT1)"))
 dev.off()
 
 ###############################

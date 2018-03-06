@@ -70,7 +70,7 @@ useful.groups <- c( # CRISPRi:
 keep <- y$samples$group %in% useful.groups
 y <- y[,keep]
 summary(keep)
-useful.blocks <- c("12", "13", "42", "43", "52", "53", "61", "62")
+useful.blocks <- c("12", "13", "42", "43", "52", "53", "61", "62", "65", "66")
 keep <- y$samples$block %in% useful.blocks
 y <- y[,keep]
 summary(keep)
@@ -87,7 +87,7 @@ g <- factor(y$samples$group)
 b <- factor(y$samples$block)
 design <- model.matrix(~ 0 + g + b)
 c(ncol(design), qr(design)$rank)
-design <- design[,!colnames(design)%in% c("b42", "b52", "b61")]
+design <- design[,!colnames(design)%in% c("b42", "b52", "b61", "b65")]
 c(ncol(design), qr(design)$rank)
 ```
 

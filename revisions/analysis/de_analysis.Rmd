@@ -28,7 +28,7 @@ Loading in the counts, and ignoring the first column of gene lengths.
 
 ```{r, eval=.use.local, echo=.use.local}
 all.counts <- read.table("../data/subcounts.tsv", header=TRUE, row.names=1, sep="\t",
-    colClasses=c(list("character", "integer"), as.list(rep("integer", 84))))
+    colClasses=c(list("character", "integer"), as.list(rep("integer", 51))))
 lengths <- all.counts[,1]
 all.counts <- all.counts[,-1]
 dim(all.counts)
@@ -72,23 +72,6 @@ Exploring the libraries.
 colors <- rainbow(length(unique(y$samples$group)))
 adjc <- cpm(y, log=TRUE, prior=3)
 mds.out <- plotMDS(adjc, col=colors[as.integer(factor(y$samples$group))], pch=16)
-```
-
-Colouring by type of experiment (CRISPRi, siRNA or LNA).
-
-```{r}
-col <- rep("grey80", ncol(y)) # cells alone
-col[metadata$LOF=="CRISPRi"] <- "orange"
-col[metadata$LOF=="LNA"] <- "blue"
-col[metadata$LOF=="RNA interference"] <- "red"
-plotMDS(mds.out, col=col, pch=16, label=1:ncol(y))
-```
-
-Colouring by batch.
-
-```{r}
-col <- c("purple", "pink", "black", "grey80", "dodgerblue")[metadata$Batch]
-plotMDS(mds.out, col=col, pch=16)
 ```
 
 Checking that the samples express the genes they're meant to express (or not).
@@ -161,6 +144,14 @@ Replacing the spaces in the column names with underscores.
 ```{r}
 colnames(design) <- sub(" ", "_", colnames(design))
 colnames(design)
+```
+
+Converting the matrix to full rank.
+
+```{r}
+c(ncol(design), qr(design)$rank)
+design <- design[,!colnames(design) %in% c("block4", "block7")]
+c(ncol(design), qr(design)$rank)
 ```
 
 Modelling the mean-variance trend with `voom`.
@@ -281,7 +272,7 @@ Testing for DE between MALAT1-knockdowns and the control guide.
 
 ```{r}
 fname <- "CRISPRi_MALAT1"
-con <- makeContrasts((gMalat84 + gMalat86)/2 - gNC2_CRISPRi, levels=design)
+con <- makeContrasts(gMalat84 - gNC2_CRISPRi, levels=design)
 colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
@@ -294,11 +285,12 @@ Repeating with a log-fold change threshold of 0.5.
 ```{r, ref.label="progenitor"}
 ```
 
+<!--
 ## Contrasts for the drugs
 
 After treatment with Monastrol.
 
-```{r}
+```{r, eval=FALSE}
 fname <- "Monastrol"
 con <- makeContrasts(gMonastrol - ghela_cells, levels=design)
 colnames(con) <- fname
@@ -310,12 +302,12 @@ WRITE(fit2, fname)
 
 Repeating with a log-fold change threshold of 0.5.
 
-```{r, ref.label="progenitor"}
+```{r, eval=FALSE, ref.label="progenitor"}
 ```
 
 After treatment with NOCO.
 
-```{r}
+```{r, eval=FALSE}
 fname <- "NOCO"
 con <- makeContrasts(gNOCO - ghela_cells, levels=design)
 colnames(con) <- fname
@@ -327,8 +319,9 @@ WRITE(fit2, fname)
 
 Repeating with a log-fold change threshold of 0.5.
 
-```{r, ref.label="progenitor"}
+```{r, eval=FALSE, ref.label="progenitor"}
 ```
+-->
 
 # Session information
 

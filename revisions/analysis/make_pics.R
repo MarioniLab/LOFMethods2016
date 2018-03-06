@@ -84,42 +84,6 @@ dev.off()
 
 ###############################
 
-# Comparisons between positive and negative p-values.
-ref.results <- list(RNAi=read.table("../../analysis/differential/results_lfc/siRNA_Ambion_vs_Dharmacon.txt", header=TRUE),
-                    LNA=read.table("../../analysis/differential/results_lfc/LNA_controlA_vs_controlB.txt", header=TRUE),
-                    CRISPRi=read.table("../../analysis/differential/results_lfc/CRISPRi_het_Nc.1_vs_Nc.2.txt", header=TRUE))
-
-GENERATE_CURVE <- function(pos, neg) {
-    keep <- intersect(rownames(pos), rownames(neg))
-    findInterval(sort(neg$P.Value[rownames(neg) %in% keep]), sort(pos$P.Value[rownames(pos) %in% keep]))
-}
-
-pdf("pics/roc.pdf")
-rnai <- GENERATE_CURVE(all.results$TOG.RNAi, ref.results$RNAi)
-plot(seq_along(rnai), rnai, type="l", lwd=2, col="purple", xlim=c(0, 100), ylim=c(0, 1000), lty=2,
-     ylab="Number of DE genes upon knockdown", xlab="Number of DE genes between negative controls")
-rnai <- GENERATE_CURVE(read.table("../../analysis/differential/results_lfc/siRNA_289_vs_Dharmacon.txt", header=TRUE), ref.results$RNAi)
-lines(seq_along(rnai), rnai, lwd=3, col="purple", lty=1)
-
-lna <- GENERATE_CURVE(all.results$MALAT1.LNA, ref.results$LNA)
-lines(seq_along(lna), lna, lwd=2, col="dodgerblue", lty=3)
-lna <- GENERATE_CURVE(read.table("../../analysis/differential/results_lfc/LNA_289.2_vs_controlA.txt", header=TRUE), ref.results$LNA)
-lines(seq_along(lna), lna, lwd=3, col="dodgerblue", lty=1)
-
-crispri <- GENERATE_CURVE(all.results$TOG.CRISPRi, ref.results$CRISPRi)
-lines(seq_along(crispri), crispri, lwd=2, col="brown", lty=2)
-crispri <- GENERATE_CURVE(all.results$MALAT1.CRISPRi, ref.results$CRISPRi)
-lines(seq_along(crispri), crispri, lwd=2, col="brown", lty=3)
-crispri <- GENERATE_CURVE(read.table("../../analysis/differential/results_lfc/CRISPRi_het_289.9_vs_Nc.2.txt", header=TRUE), ref.results$CRISPRi)
-lines(seq_along(crispri), crispri, lwd=3, col="brown", lty=1)
-
-legend("topleft", col=c("purple", "purple", "dodgerblue", "dodgerblue", "brown", "brown", "brown"),
-       lwd=2, lty=c(1,2,1,3,1,2,3), 
-       legend=c("RNAi (289)", "RNAi (ch-TOG)", "LNA (289)", "LNA (MALAT1)", "CRISPRi (289)", "CRISPRi (ch-TOG)", "CRISPRi (MALAT1)"))
-dev.off()
-
-###############################
-
 # Generating MA plots.
 
 FUN <- function(fname, threshold, main) {

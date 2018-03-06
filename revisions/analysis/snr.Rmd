@@ -1,0 +1,337 @@
+---
+title: Computing the signal-to-noise ratio for DE analyses
+author: Aaron Lun
+date: 6 March 2018
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    depth: 3
+    number_sections: true
+    theme: united
+    highlight: tango
+    fig_caption: false
+---
+
+```{r, echo=FALSE, results='hide'}
+knitr::opts_chunk$set(error=FALSE, message=FALSE, warning=FALSE)
+knitr::opts_knit$set(width=100, fig.path="figure-snr/")
+dir.create('figure-snr', showWarning=FALSE)
+options(width=100)
+```
+
+# Pulling in the data
+
+We pull in the old data (with the controls) and new data (with the comparisons for ch-TOG and MALAT1).
+
+```{r}
+library(edgeR)
+yold <- readRDS("../../analysis/differential/object.rds")
+ynew <- readRDS("object.rds")
+```
+
+We make sure that they have the same gene orders.
+
+```{r}
+shared <- intersect(rownames(yold), rownames(ynew))
+yold <- yold[shared,]
+ynew <- ynew[shared,]
+```
+
+We augment the annotation.
+
+```{r}
+ynew$samples$group <- paste0(sub(" ", "_", ynew$samples$group), ".batch_6")
+ynew$samples$block <- paste0("6", ynew$samples$block)
+y <- cbind(yold, ynew)
+```
+
+To equalize power, we only keep two of each condition.
+We also discard conditions that are not relevant to our comparison.
+
+```{r}
+useful.groups <- c( # CRISPRi:
+    "CRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_1.batch_5",
+    "CRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_5",
+    "CRISPRi.heterogeneous_dCas9_KRAB.289_guide_9.batch_5",
+    "CRISPRi.heterogeneous_dCas9_KRAB.H19_guide_2.batch_5",
+    "TOG94.batch_6", "Malat84.batch_6", "NC2_CRISPRi.batch_6",
+    # LNA:
+    "LNA.wild_type_genotype.Negative_control_A.batch_4",
+    "LNA.wild_type_genotype.Negative_control_B.batch_4",
+    "LNA.wild_type_genotype.Negative_control_B.batch_1",
+    "LNA.wild_type_genotype.289_LNA.batch_1",
+    "Malat_LNA.batch_6", "LNA_A.batch_6",
+    # RNAi:
+    "RNA_interference.wild_type_genotype.Ambion_control.batch_1",
+    "RNA_interference.wild_type_genotype.Dharmacon_control.batch_1",
+    "RNA_interference.wild_type_genotype.289_siRNA.batch_1",
+    "TOGsi.batch_6", "Con_Dharm.batch_6")
+keep <- y$samples$group %in% useful.groups
+y <- y[,keep]
+summary(keep)
+useful.blocks <- c("12", "13", "42", "43", "52", "53", "61", "62")
+keep <- y$samples$block %in% useful.blocks
+y <- y[,keep]
+summary(keep)
+```
+
+# Setting up the DE analysis
+
+Setting up the design matrix.
+Note some unestimable coefficients need to be removed.
+
+```{r}
+library(limma)
+g <- factor(y$samples$group)
+b <- factor(y$samples$block)
+design <- model.matrix(~ 0 + g + b)
+c(ncol(design), qr(design)$rank)
+design <- design[,!colnames(design)%in% c("b42", "b52", "b61")]
+c(ncol(design), qr(design)$rank)
+```
+
+We normalize and estimate the variance with our restricted subset of libraries, to allow us to compare p-values between contrasts.
+
+```{r}
+y <- calcNormFactors(y)
+v <- voom(y, design, plot=TRUE)
+```
+
+Fitting a linear model.
+
+```{r}
+fit <- lmFit(v, design)
+fit <- treat(lfc=0.5, fit, robust=TRUE)
+plotSA(fit)
+```
+
+We set up a function to generate ROC curves.
+
+```{r}
+GEN <- function(pos, neg) {
+    findInterval(sort(neg), sort(pos))
+}
+```
+
+# RNAi comparisons
+
+First we compare between negative controls.
+
+```{r}
+con <- makeContrasts(levels=design, 
+    gRNA_interference.wild_type_genotype.Ambion_control.batch_1 -
+    gRNA_interference.wild_type_genotype.Dharmacon_control.batch_1)
+fit2 <- contrasts.fit(fit, con)
+fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
+rnai.neg <- fit2$p.value
+```
+
+We then compare 289 knockdown.
+
+```{r}
+con <- makeContrasts(levels=design, 
+    gRNA_interference.wild_type_genotype.289_siRNA.batch_1 - 
+    gRNA_interference.wild_type_genotype.Dharmacon_control.batch_1)
+fit2 <- contrasts.fit(fit, con)
+fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
+rnai.289 <- fit2$p.value
+```
+
+And same for TOG.
+
+```{r}
+con <- makeContrasts(levels=design, gTOGsi.batch_6 - gCon_Dharm.batch_6)
+fit2 <- contrasts.fit(fit, con)
+fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
+rnai.TOG <- fit2$p.value
+```
+
+We now look at these ROC curves.
+
+```{r}
+plot(GEN(rnai.TOG, rnai.neg), xlim=c(0, 200), ylim=c(0, 2000), type="l", lwd=2,
+    xlab="Number of false positives", ylab="Number of DE genes upon knockdown",
+    main="RNAi")
+lines(GEN(rnai.289, rnai.neg), col="red", lwd=2)
+legend("topleft", col=c("black", "red"), legend=c("ch-TOG", "289"), lwd=2)
+```
+
+# LNA comparisons
+
+First we compare between negative controls.
+
+```{r}
+con <- makeContrasts(levels=design, 
+    gLNA.wild_type_genotype.Negative_control_A.batch_4 -
+    gLNA.wild_type_genotype.Negative_control_B.batch_4)
+fit2 <- contrasts.fit(fit, con)
+fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
+lna.neg <- fit2$p.value
+```
+
+We then compare 289 knockdown.
+
+```{r}
+con <- makeContrasts(levels=design,
+    gLNA.wild_type_genotype.Negative_control_B.batch_1 -
+    gLNA.wild_type_genotype.289_LNA.batch_1)
+fit2 <- contrasts.fit(fit, con)
+fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
+lna.289 <- fit2$p.value
+```
+
+And same for MALAT1.
+
+```{r}
+con <- makeContrasts(levels=design, gMalat_LNA.batch_6 - gLNA_A.batch_6) 
+fit2 <- contrasts.fit(fit, con)
+fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
+lna.MALAT <- fit2$p.value
+```
+
+We now look at these ROC curves.
+
+```{r}
+plot(GEN(lna.MALAT, lna.neg), xlim=c(0, 200), ylim=c(0, 2000), type="l", lwd=2,
+    xlab="Number of false positives", ylab="Number of DE genes upon knockdown",
+    col="blue", main="LNA")
+lines(GEN(lna.289, lna.neg), col="red", lwd=2)
+legend("topleft", col=c("blue", "red"), legend=c("MALAT1", "289"), lwd=2)
+```
+
+# CRISPRi comparisons
+
+First we compare between negative controls.
+
+```{r}
+con <- makeContrasts(levels=design,
+    gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_1.batch_5 - 
+    gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_5)
+fit2 <- contrasts.fit(fit, con)
+fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
+crispri.neg <- fit2$p.value
+```
+
+We then compare 289 knockdown.
+
+```{r}
+con <- makeContrasts(levels=design,
+    gCRISPRi.heterogeneous_dCas9_KRAB.289_guide_9.batch_5 - 
+    gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_5)
+fit2 <- contrasts.fit(fit, con)
+fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
+crispri.289 <- fit2$p.value
+```
+
+And same for H19.
+
+```{r}
+con <- makeContrasts(levels=design, 
+    gCRISPRi.heterogeneous_dCas9_KRAB.H19_guide_2.batch_5 - 
+    gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_5)
+fit2 <- contrasts.fit(fit, con)
+fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
+crispri.H19 <- fit2$p.value
+```
+
+And same for TOG.
+
+```{r}
+con <- makeContrasts(levels=design, gTOG94.batch_6 - gNC2_CRISPRi.batch_6)
+fit2 <- contrasts.fit(fit, con)
+fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
+crispri.TOG <- fit2$p.value
+```
+
+And same for MALAT1.
+
+```{r}
+con <- makeContrasts(levels=design, gMalat84.batch_6 - gNC2_CRISPRi.batch_6)
+fit2 <- contrasts.fit(fit, con)
+fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
+crispri.MALAT <- fit2$p.value
+```
+
+We now look at these ROC curves.
+
+```{r}
+plot(GEN(crispri.MALAT, crispri.neg), xlim=c(0, 200), ylim=c(0, 2000), type="l", lwd=2,
+    xlab="Number of false positives", ylab="Number of DE genes upon knockdown",
+    col="blue", main="CRISPRi")
+lines(GEN(crispri.289, crispri.neg), col="red", lwd=2)
+lines(GEN(crispri.TOG, crispri.neg), col="black", lwd=2)
+lines(GEN(crispri.H19, crispri.neg), col="orange", lwd=2)
+legend("topleft", col=c("blue", "red", "black", "orange"), 
+    legend=c("MALAT1", "289", "ch-TOG", "H19"), lwd=2)
+```
+
+# Putting everything together
+
+We create a three-panel PDF where everything is stuck together, arranged by technology.
+
+```{r}
+xlab <- "Number of DE genes between negative controls"
+ylab <- "Number of DE genes upon knockdown"
+xlim <- c(0, 200)
+ylim <- c(0, 2000)
+
+colors <- c(`289`="grey50", H19="blue", MALAT1="red", `ch-TOG`="goldenrod")
+xpos <- xlim[2] - 10
+
+pdf("pics/roc.pdf")
+
+# For RNAi
+o.rnai.TOG <-GEN(rnai.TOG, rnai.neg)
+plot(o.rnai.TOG, xlim=xlim, ylim=ylim, type="l", lwd=5,
+    xlab=xlab, ylab=ylab, main="RNAi")
+lines(o.rnai.TOG, lwd=3, col=colors["ch-TOG"])
+text(xpos, o.rnai.TOG[xlim[2]], "ch-TOG", pos=3)
+
+o.rnai.289 <- GEN(rnai.289, rnai.neg)
+lines(o.rnai.289, lwd=5)
+lines(o.rnai.289, col=colors["289"], lwd=3)
+text(xpos, o.rnai.289[xlim[2]], "289", pos=3)
+
+# For LNA.
+o.lna.MALAT <- GEN(lna.MALAT, lna.neg)
+plot(o.lna.MALAT, xlim=xlim, ylim=ylim, type="l", lwd=5,
+    xlab=xlab, ylab=ylab, main="LNA")
+lines(o.lna.MALAT, col=colors["MALAT1"], lwd=3) 
+text(xpos, o.lna.MALAT[xlim[2]], "MALAT1", pos=3)
+
+o.lna.289 <- GEN(lna.289, lna.neg)
+lines(o.lna.289, lwd=5)
+lines(o.lna.289, col=colors["289"], lwd=3)
+text(xpos, o.lna.289[xlim[2]], "289", pos=3)
+
+# For CRISPRi
+o.crispri.MALAT <- GEN(crispri.MALAT, crispri.neg)
+plot(o.crispri.MALAT, xlim=xlim, ylim=ylim, type="l", lwd=5,
+    xlab=xlab, ylab=ylab, main="CRISPRi")
+lines(o.crispri.MALAT, col=colors["MALAT1"], lwd=3) 
+text(xpos, o.crispri.MALAT[xlim[2]], "MALAT1", pos=3)
+
+o.crispri.289 <- GEN(crispri.289, crispri.neg) 
+lines(o.crispri.289, lwd=5)
+lines(o.crispri.289, col=colors["289"], lwd=3)
+text(xpos, o.crispri.289[xlim[2]], "289", pos=3)
+
+o.crispri.TOG <- GEN(crispri.TOG, crispri.neg)
+lines(o.crispri.TOG, lwd=5)
+lines(o.crispri.TOG, col=colors["ch-TOG"], lwd=3)
+text(xpos, o.crispri.TOG[xlim[2]] - 20, "ch-TOG", pos=1)
+
+o.crispri.H19 <- GEN(crispri.H19, crispri.neg)
+lines(o.crispri.H19, lwd=5)
+lines(o.crispri.H19, col=colors["H19"], lwd=3)
+text(xpos, o.crispri.H19[xlim[2]], "H19", pos=1)
+dev.off()
+```
+
+# Session info
+
+```{r}
+sessionInfo()
+```
+

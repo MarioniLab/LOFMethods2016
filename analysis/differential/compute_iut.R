@@ -9,9 +9,9 @@ getIUTP <- function(tab1, tab2) {
 
     # Converting into one-sided p-values.
     up.p1 <- ifelse(lfc1 > 0, p1/2, 1-p1/2)
-    up.p2 <- ifelse(lfc1 > 0, p2/2, 1-p2/2)
+    up.p2 <- ifelse(lfc2 > 0, p2/2, 1-p2/2)
     down.p1 <- ifelse(lfc1 < 0, p1/2, 1-p1/2) # technically '1 - up.p1', but avoid numerical imprecision.
-    down.p2 <- ifelse(lfc1 < 0, p2/2, 1-p2/2)
+    down.p2 <- ifelse(lfc2 < 0, p2/2, 1-p2/2)
     
     # Combining and then converting back to two-sided p-values via '*2'.
     up.p <- pmax(up.p1, up.p2)

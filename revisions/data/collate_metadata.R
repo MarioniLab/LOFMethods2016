@@ -17,13 +17,43 @@ metadata$Condition <- sub("_exp[0-9]+$", "", metadata$Group)
 metadata$Experiment <- sub("^.*_exp", "", metadata$Group)
 metadata$Group <- NULL
 
-# Removing uninterestin groups.
+# Removing uninteresting groups.
 metadata <- metadata[!metadata$Condition %in% c("Malat86", "NOCO", "Monastrol", "hela_cells", "BFP_CAS9"),]
 
 # Replacing dashes with underscores.
 metadata$Library <- sub("-", "_", metadata$Library)
-write.table(file="metadata.tsv", metadata, sep="\t", quote=FALSE, row.names=FALSE)
 
+##########################################
+# Setting up the metadata.
+
+Date <- "20180227"
+Batch <- 6
+
+LOF <- character(nrow(metadata))
+LOF[grepl("^Malat84", metadata$Condition) | grepl("^TOG94", metadata$Condition) | grepl("^NC2_CRISPRi", metadata$Condition)] <- "CRISPRi"
+LOF[grepl("^TOGsi", metadata$Condition) | grepl("^Con Dharm", metadata$Condition)] <- "RNA interference"
+LOF[grepl("^Malat LNA", metadata$Condition) | grepl("^LNA A", metadata$Condition)] <- "LNA"
+
+Genotype <- rep("wild type genotype", nrow(metadata))
+Genotype[LOF=="CRISPRi"] <- "heterogeneous dCas9-KRAB"
+
+Compound <- character(nrow(metadata))
+Compound[grepl("^Malat84", metadata$Condition)] <- "MALAT1 guide 1"
+Compound[grepl("^TOG94", metadata$Condition)] <- "Ch-TOG guide 1"
+Compound[grepl("^NC2_CRISPRi", metadata$Condition)] <- "Negative control guide 2"
+Compound[grepl("^TOGsi", metadata$Condition)] <- "Ch-TOG siRNA"
+Compound[grepl("^Con Dharm", metadata$Condition)] <- "Dharmacon control"
+Compound[grepl("^Malat LNA", metadata$Condition)] <- "MALAT1 LNA"
+Compound[grepl("^LNA A", metadata$Condition)] <- "Negative control A"
+
+write.table(file="metadata.tsv", 
+            data.frame(Library=metadata$Library,
+                       Condition=gsub("[ -]", "_", paste(LOF, Genotype, Compound, paste0("batch_", Batch), sep=".")),
+                       Experiment=metadata$Experiment,
+                       Date=Date, Batch=Batch, LOF=LOF, Genotype=Genotype, Compound=Compound),                                   
+            sep="\t", quote=FALSE, row.names=FALSE)
+
+##########################################
 # Identifying columns to remove in the count table.
 counts <- read.table("genic_counts.tsv", header=TRUE, check.names=FALSE)
 re.names <- sub("SLX-[0-9]+\\.", "", colnames(counts))

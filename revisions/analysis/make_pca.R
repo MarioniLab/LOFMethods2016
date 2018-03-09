@@ -83,7 +83,7 @@ pct.exp <- var.exp/sum(var.exp) * 100
 
 # Plotting.
 pdf("pics/all_pca.pdf", width=8, height=5)
-tech.colors <- list(RNAi="#7F4098", LNA="#28A8E0", CRISPRi="#F79420", CRISPRi.het="#6D3F19")
+tech.colors <- list(RNAi="#7F4098CC", LNA="#28A8E0B3", CRISPRi="#F79420FF", CRISPRi.het="#6D3F19CC")
 
 # Color by technology.
 color <- rep("grey", ncol(y))
@@ -114,10 +114,10 @@ legend("topleft",
        )
 
 # Shape by knockdown.
-target.colors <- list(`289`="black", H19="gold", TOG="cadetblue", MALAT1="indianred")
+target.colors <- list(`SLC25A25-AS1`="black", H19="gold", TOG="cadetblue", MALAT1="indianred")
 
 color <- rep("grey", ncol(y))
-color[grepl("289", y$samples$group)] <- target.colors$`289`
+color[grepl("289", y$samples$group)] <- target.colors$`SLC25A25-AS1`
 color[grepl("H19", y$samples$group)] <- target.colors$H19
 color[grepl("TOG", y$samples$group)] <- target.colors$TOG
 color[grepl("MALAT", ignore.case=TRUE, y$samples$group)] <- target.colors$MALAT1
@@ -133,6 +133,6 @@ plot.new()
 legend("topleft", 
        col=c("grey", unlist(target.colors)),
        pch=16,
-       legend=c("No knockdown", "289", "H19", "Ch-TOG", "MALAT1"))
+       legend=c("No knockdown", "SLC25A25-AS1", "H19", "Ch-TOG", "MALAT1"))
 
 dev.off()

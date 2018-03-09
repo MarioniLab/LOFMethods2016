@@ -2,7 +2,7 @@ all.results <- list(TOG.RNAi=read.table("results_lfc/siRNA_TOG_vs_Dharmacon.txt"
                     TOG.CRISPRi=read.table("results_lfc/CRISPRi_het_TOG_vs_negguide2.txt", header=TRUE),
                     MALAT1.LNA=read.table("results_lfc/LNA_MALAT1_vs_controlA.txt", header=TRUE),
                     MALAT1.CRISPRi=read.table("results_lfc/CRISPRi_het_MALAT1_vs_negguide2.txt", header=TRUE))
-tech.colors <- list(RNAi="#7F4098", LNA="#28A8E0", CRISPRi="#F79420", CRISPRi.het="#6D3F19")
+tech.colors <- list(RNAi="#7F4098CC", LNA="#28A8E0B3", CRISPRi="#F79420FF", CRISPRi.het="#6D3F19CC")
 
 ###############################
 
@@ -13,7 +13,8 @@ threshold <- max(all.p[adj.p <= 0.05])
 # Setting up a function to compare between the different technologies.
 dir.create("pics")
 PROCESSOR <- function(positive, negative, target, pos.lab="Y", neg.lab="X", largest=5, ..., 
-                      pos.col="red", neg.col="blue", both.col="black", arrow.col="black") {
+                      pos.col="red", neg.col="blue", pos.pch=16, neg.pch=16,
+                      both.col="black", arrow.col="black") {
     shared <- intersect(rownames(positive), rownames(negative))
     positive <- positive[shared,]
     negative <- negative[shared,]
@@ -30,15 +31,15 @@ PROCESSOR <- function(positive, negative, target, pos.lab="Y", neg.lab="X", larg
          ylim=c(-largest, largest), ...)
 
     PnN <- is.P & !is.N
-    points(X[PnN], Y[PnN], col=pos.col, pch=16)
+    points(X[PnN], Y[PnN], col=pos.col, pch=pos.pch)
     NnP <- !is.P & is.N
-    points(X[NnP], Y[NnP], col=neg.col, pch=16)
+    points(X[NnP], Y[NnP], col=neg.col, pch=neg.pch)
     NP <- is.P & is.N
     points(X[NP], Y[NP], col=both.col, bg="white", pch=23, cex=1.2)
 
     arrows(X[chosen] - 0.5, Y[chosen], X[chosen] - 0.1, Y[chosen], lwd=2, length=0.1, col=arrow.col)
 
-    legend("topright", pch=c(16, 16, 23), col=c(pos.col, neg.col, both.col),
+    legend("topright", pch=c(pos.pch, neg.pch, 23), col=c(pos.col, neg.col, both.col),
            legend=c(sprintf("DE in %s only (%i)", pos.lab, sum(PnN)),
                     sprintf("DE in %s only (%i)", neg.lab, sum(NnP)),
                     sprintf("DE in both (%i)", sum(NP))))
@@ -50,7 +51,8 @@ pdf("pics/TOG_methods.pdf")
 PROCESSOR(all.results$TOG.CRISPRi, all.results$TOG.RNAi,
           xlab="siRNA versus Dharmacon", ylab="CRISPRi vs negative guide", 
           target="CKAP5", main="ch-TOG", pos.lab="CRISPRi", neg.lab="RNAi", 
-          pos.col=tech.colors$CRISPRi.het, neg.col=tech.colors$RNAi, arrow.col="red")
+          pos.col=tech.colors$CRISPRi.het, neg.col=tech.colors$RNAi, 
+          pos.pch=16, neg.pch=17, arrow.col="red")
 dev.off()
 
 pdf("pics/MALAT1_methods.pdf")
@@ -58,7 +60,8 @@ PROCESSOR(all.results$MALAT1.CRISPRi, all.results$MALAT1.LNA,
           xlab="LNA versus negative control A", ylab="CRISPRi vs negative guide", 
           target="MALAT1", main="MALAT1", 
           pos.lab="CRISPRi", neg.lab="LNA", 
-          pos.col=tech.colors$CRISPRi.het, neg.col=tech.colors$LNA, arrow.col="red")
+          pos.col=tech.colors$CRISPRi.het, neg.col=tech.colors$LNA, 
+          pos.pch=16, neg.pch=15, arrow.col="red")
 dev.off()
 
 ## Drugs.

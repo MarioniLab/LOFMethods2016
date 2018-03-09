@@ -30,19 +30,12 @@ yold <- readRDS("../../analysis/differential/object.rds")
 ynew <- readRDS("object.rds")
 ```
 
-We make sure that they have the same gene orders.
+We make sure that they have the same gene orders before `cbind`ing everything together.
 
 ```{r}
 shared <- intersect(rownames(yold), rownames(ynew))
 yold <- yold[shared,]
 ynew <- ynew[shared,]
-```
-
-We augment the annotation.
-
-```{r}
-ynew$samples$group <- paste0(sub(" ", "_", ynew$samples$group), ".batch_6")
-ynew$samples$block <- paste0("6", ynew$samples$block)
 y <- cbind(yold, ynew)
 ```
 
@@ -50,23 +43,30 @@ To equalize power, we only keep two replicates for each condition.
 We also discard conditions that are not relevant to our comparison.
 
 ```{r}
-useful.groups <- c( # CRISPRi:
+useful.groups <- c( 
+    # CRISPRi:
     "CRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_1.batch_5",
     "CRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_5",
     "CRISPRi.heterogeneous_dCas9_KRAB.289_guide_9.batch_5",
     "CRISPRi.heterogeneous_dCas9_KRAB.H19_guide_2.batch_5",
-    "TOG94.batch_6", "Malat84.batch_6", "NC2_CRISPRi.batch_6",
+    "CRISPRi.heterogeneous_dCas9_KRAB.MALAT1_guide_1.batch_6",
+    "CRISPRi.heterogeneous_dCas9_KRAB.Ch_TOG_guide_1.batch_6",
+    "CRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_6",
+
     # LNA:
     "LNA.wild_type_genotype.Negative_control_A.batch_4",
     "LNA.wild_type_genotype.Negative_control_B.batch_4",
     "LNA.wild_type_genotype.Negative_control_B.batch_1",
     "LNA.wild_type_genotype.289_LNA.batch_1",
-    "Malat_LNA.batch_6", "LNA_A.batch_6",
+    "LNA.wild_type_genotype.MALAT1_LNA.batch_6",
+    "LNA.wild_type_genotype.Negative_control_A.batch_6",
+
     # RNAi:
     "RNA_interference.wild_type_genotype.Ambion_control.batch_1",
     "RNA_interference.wild_type_genotype.Dharmacon_control.batch_1",
     "RNA_interference.wild_type_genotype.289_siRNA.batch_1",
-    "TOGsi.batch_6", "Con_Dharm.batch_6")
+    "RNA_interference.wild_type_genotype.Ch_TOG_siRNA.batch_6",
+    "RNA_interference.wild_type_genotype.Dharmacon_control.batch_6")
 keep <- y$samples$group %in% useful.groups
 y <- y[,keep]
 summary(keep)
@@ -146,7 +146,9 @@ rnai.289.lfc <- fit2$coefficients
 And same for TOG.
 
 ```{r}
-con <- makeContrasts(levels=design, gTOGsi.batch_6 - gCon_Dharm.batch_6)
+con <- makeContrasts(levels=design, 
+    gRNA_interference.wild_type_genotype.Ch_TOG_siRNA.batch_6 - 
+    gRNA_interference.wild_type_genotype.Dharmacon_control.batch_6)
 fit2 <- contrasts.fit(fit, con)
 fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
 rnai.TOG <- fit2$p.value
@@ -192,7 +194,9 @@ lna.289.lfc <- fit2$coefficients
 And same for MALAT1.
 
 ```{r}
-con <- makeContrasts(levels=design, gMalat_LNA.batch_6 - gLNA_A.batch_6) 
+con <- makeContrasts(levels=design, 
+    gLNA.wild_type_genotype.MALAT1_LNA.batch_6 - 
+    gLNA.wild_type_genotype.Negative_control_A.batch_6)
 fit2 <- contrasts.fit(fit, con)
 fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
 lna.MALAT <- fit2$p.value
@@ -250,7 +254,9 @@ crispri.H19.lfc <- fit2$coefficients
 And same for TOG.
 
 ```{r}
-con <- makeContrasts(levels=design, gTOG94.batch_6 - gNC2_CRISPRi.batch_6)
+con <- makeContrasts(levels=design, 
+    gCRISPRi.heterogeneous_dCas9_KRAB.Ch_TOG_guide_1.batch_6 - 
+    gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_6)
 fit2 <- contrasts.fit(fit, con)
 fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
 crispri.TOG <- fit2$p.value
@@ -260,7 +266,9 @@ crispri.TOG.lfc <- fit2$coefficients
 And same for MALAT1.
 
 ```{r}
-con <- makeContrasts(levels=design, gMalat84.batch_6 - gNC2_CRISPRi.batch_6)
+con <- makeContrasts(levels=design, 
+    gCRISPRi.heterogeneous_dCas9_KRAB.MALAT1_guide_1.batch_6 - 
+    gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_6)
 fit2 <- contrasts.fit(fit, con)
 fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
 crispri.MALAT <- fit2$p.value
@@ -289,7 +297,7 @@ xlab <- "Number of DE genes between negative controls"
 ylab <- "Number of DE genes upon knockdown"
 xlim <- c(0, 200)
 ylim <- c(0, 2000)
-colors <- c(`289`="grey50", H19="blue", MALAT1="red", `ch-TOG`="goldenrod")
+colors <- c(`289`="black", H19="gold", MALAT1="indianred", `ch-TOG`="cadetblue")
 xpos <- xlim[2] - 10
 pdf("pics/roc.pdf")
 

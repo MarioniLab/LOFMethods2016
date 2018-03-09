@@ -1,7 +1,8 @@
-all.results <- list(TOG.RNAi=read.table("results_lfc/siRNA_TOG.txt", header=TRUE),
-                    TOG.CRISPRi=read.table("results_lfc/CRISPRi_TOG.txt", header=TRUE),
-                    MALAT1.LNA=read.table("results_lfc/LNA_MALAT1.txt", header=TRUE),
-                    MALAT1.CRISPRi=read.table("results_lfc/CRISPRi_MALAT1.txt", header=TRUE))
+all.results <- list(TOG.RNAi=read.table("results_lfc/siRNA_TOG_vs_Dharmacon.txt", header=TRUE),
+                    TOG.CRISPRi=read.table("results_lfc/CRISPRi_het_TOG_vs_negguide2.txt", header=TRUE),
+                    MALAT1.LNA=read.table("results_lfc/LNA_MALAT1_vs_controlA.txt", header=TRUE),
+                    MALAT1.CRISPRi=read.table("results_lfc/CRISPRi_het_MALAT1_vs_negguide2.txt", header=TRUE))
+tech.colors <- list(RNAi="#7F4098", LNA="#28A8E0", CRISPRi="#F79420", CRISPRi.het="#6D3F19")
 
 ###############################
 
@@ -49,7 +50,7 @@ pdf("pics/TOG_methods.pdf")
 PROCESSOR(all.results$TOG.CRISPRi, all.results$TOG.RNAi,
           xlab="siRNA versus Dharmacon", ylab="CRISPRi vs negative guide", 
           target="CKAP5", main="ch-TOG", pos.lab="CRISPRi", neg.lab="RNAi", 
-          pos.col="brown", neg.col="purple", arrow.col="red")
+          pos.col=tech.colors$CRISPRi.het, neg.col=tech.colors$RNAi, arrow.col="red")
 dev.off()
 
 pdf("pics/MALAT1_methods.pdf")
@@ -57,7 +58,7 @@ PROCESSOR(all.results$MALAT1.CRISPRi, all.results$MALAT1.LNA,
           xlab="LNA versus negative control A", ylab="CRISPRi vs negative guide", 
           target="MALAT1", main="MALAT1", 
           pos.lab="CRISPRi", neg.lab="LNA", 
-          pos.col="brown", neg.col="dodgerblue", arrow.col="red")
+          pos.col=tech.colors$CRISPRi.het, neg.col=tech.colors$LNA, arrow.col="red")
 dev.off()
 
 ## Drugs.
@@ -66,12 +67,12 @@ dev.off()
 #PROCESSOR(all.results$TOG.RNAi, monastrol,
 #          xlab="Monastrol vs unstreated", 
 #          ylab="ch-TOG RNAi versus control Dharmacon", 
-#          target="CKAP5", main="RNAi (ch-TOG)", pos.lab="CRISPRi", neg.lab="treated", col="brown")
+#          target="CKAP5", main="RNAi (ch-TOG)", pos.lab="CRISPRi", neg.lab="treated", col=tech.colors$CRISPRi.het)
 #
 #PROCESSOR(all.results$TOG.CRISPRi, monastrol,
 #          xlab="Monastrol vs unstreated", 
 #          ylab="ch-TOG CRISPRi versus control guide", 
-#          target="CKAP5", main="CRISPRi (ch-TOG)", pos.lab="CRISPRi", neg.lab="treated", col="brown")
+#          target="CKAP5", main="CRISPRi (ch-TOG)", pos.lab="CRISPRi", neg.lab="treated", col=tech.colors$CRISPRi.het)
 #dev.off()
 #
 #pdf("pics/NOCO.pdf")
@@ -79,12 +80,12 @@ dev.off()
 #PROCESSOR(all.results$TOG.RNAi, monastrol,
 #          xlab="NOCO vs unstreated", 
 #          ylab="ch-TOG RNAi versus control Dharmacon", 
-#          target="CKAP5", main="RNAi (ch-TOG)", pos.lab="CRISPRi", neg.lab="treated", col="brown")
+#          target="CKAP5", main="RNAi (ch-TOG)", pos.lab="CRISPRi", neg.lab="treated", col=tech.colors$CRISPRi.het)
 #
 #PROCESSOR(all.results$TOG.CRISPRi, monastrol,
 #          xlab="NOCO vs unstreated", 
 #          ylab="ch-TOG CRISPRi versus control guide", 
-#          target="CKAP5", main="CRISPRi (ch-TOG)", pos.lab="CRISPRi", neg.lab="treated", col="brown")
+#          target="CKAP5", main="CRISPRi (ch-TOG)", pos.lab="CRISPRi", neg.lab="treated", col=tech.colors$CRISPRi.het)
 #dev.off()
 
 ###############################
@@ -99,8 +100,7 @@ write.table(collected, file=file.path("results_lfc", "combined.txt"), col.names=
 
 # Generating MA plots.
 
-FUN <- function(fname, threshold, main) {
-    tab <- read.table(file.path("results_lfc", fname), header=TRUE, stringsAsFactors=FALSE, sep="\t")
+FUN <- function(tab, threshold, main) {
     x <- tab$AveExpr
     y <- tab$logFC
     xlim <- range(x)
@@ -137,17 +137,16 @@ FUN <- function(fname, threshold, main) {
 }
 
 pdf("pics/ma.pdf", width=10, height=5)
-FUN("siRNA_TOG.txt", threshold, main="RNAi (ch-TOG)")
-FUN("CRISPRi_TOG.txt", threshold, main="CRISPRi (ch-TOG)")
-FUN("LNA_MALAT1.txt", threshold, main="LNA (MALAT1)")
-FUN("CRISPRi_MALAT1.txt", threshold, main="CRISPRi (MALAT1)")
+FUN(all.results$TOG.RNAi, threshold, main="RNAi (ch-TOG)")
+FUN(all.results$TOG.CRISPRi, threshold, main="CRISPRi (ch-TOG)")
+FUN(all.results$MALAT1.LNA, threshold, main="LNA (MALAT1)")
+FUN(all.results$MALAT1.CRISPRi, threshold, main="CRISPRi (MALAT1)")
 dev.off()
 
 ###############################
 
-makeVolcano <- function(fname, threshold, target, ylim=c(0, 30), xlim=c(-6, 6), 
+makeVolcano <- function(tab, threshold, target, ylim=c(0, 30), xlim=c(-6, 6), 
                         sig.col="black", chosen.col="red", chosen.pch=2, ...) {
-    tab <- read.table(file.path("results_lfc", fname), header=TRUE, stringsAsFactors=FALSE, sep="\t")
     pvalues <- tab$P.Value 
     logFCs <- tab$logFC
     sig <- pvalues <= threshold
@@ -167,10 +166,10 @@ makeVolcano <- function(fname, threshold, target, ylim=c(0, 30), xlim=c(-6, 6),
 }
 
 pdf("pics/volcano.pdf")
-makeVolcano("siRNA_TOG.txt", threshold, "CKAP5", sig.col="purple", main="RNAi (ch-TOG)")
-makeVolcano("CRISPRi_TOG.txt", threshold, "CKAP5", sig.col="brown", main="CRISPRi (ch-TOG)")
-makeVolcano("LNA_MALAT1.txt", threshold, "MALAT1", sig.col="dodgerblue", main="LNA (MALAT1)")
-makeVolcano("CRISPRi_MALAT1.txt", threshold, "MALAT1", sig.col="brown", main="CRISPRi (MALAT1)")
+makeVolcano(all.results$TOG.RNAi, threshold, "CKAP5", sig.col=tech.colors$RNAi, main="RNAi (ch-TOG)")
+makeVolcano(all.results$TOG.CRISPRi, threshold, "CKAP5", sig.col=tech.colors$CRISPRi.het, main="CRISPRi (ch-TOG)")
+makeVolcano(all.results$MALAT1.LNA, threshold, "MALAT1", sig.col=tech.colors$LNA, main="LNA (MALAT1)")
+makeVolcano(all.results$MALAT1.CRISPRi, threshold, "MALAT1", sig.col=tech.colors$CRISPRi.het, main="CRISPRi (MALAT1)")
 dev.off()
 
 

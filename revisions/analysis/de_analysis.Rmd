@@ -59,7 +59,7 @@ Generating a `DGEList` object.
 require(edgeR)
 y <- DGEList(all.counts)
 y$samples$group <- metadata$Condition
-y$samples$block <- metadata$Experiment
+y$samples$block <- paste0(metadata$Batch, metadata$Experiment)
 table(y$samples$group)
 table(y$samples$block)
 ```
@@ -139,18 +139,11 @@ design <- model.matrix(~0 + g + block)
 dim(design)
 ```
 
-Replacing the spaces in the column names with underscores.
-
-```{r}
-colnames(design) <- sub(" ", "_", colnames(design))
-colnames(design)
-```
-
 Converting the matrix to full rank.
 
 ```{r}
 c(ncol(design), qr(design)$rank)
-design <- design[,!colnames(design) %in% c("block4", "block7")]
+design <- design[,!colnames(design) %in% c("block64", "block67")]
 c(ncol(design), qr(design)$rank)
 ```
 
@@ -212,8 +205,10 @@ WRITE(fit2, fname, lfc=TRUE)
 Testing for DE between TOG-knockdowns and the Dharmacon control.
 
 ```{r}
-fname <- "siRNA_TOG"
-con <- makeContrasts(gTOGsi - gCon_Dharm, levels=design)
+fname <- "siRNA_TOG_vs_Dharmacon"
+con <- makeContrasts(levels=design,
+    gRNA_interference.wild_type_genotype.Ch_TOG_siRNA.batch_6 
+    - gRNA_interference.wild_type_genotype.Dharmacon_control.batch_6)
 colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
@@ -231,8 +226,10 @@ Repeating with a log-fold change threshold of 0.5.
 Testing for DE between MALAT1-knockdowns and the Dharmacon control.
 
 ```{r}
-fname <- "LNA_MALAT1"
-con <- makeContrasts(gMalat_LNA - gLNA_A, levels=design)
+fname <- "LNA_MALAT1_vs_controlA"
+con <- makeContrasts(levels=design,
+    gLNA.wild_type_genotype.MALAT1_LNA.batch_6
+    - gLNA.wild_type_genotype.Negative_control_A.batch_6)
 colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
@@ -252,8 +249,10 @@ Repeating with a log-fold change threshold of 0.5.
 Testing for DE between TOG-knockdowns and the control guide.
 
 ```{r}
-fname <- "CRISPRi_TOG"
-con <- makeContrasts(gTOG94 - gNC2_CRISPRi, levels=design)
+fname <- "CRISPRi_het_TOG_vs_negguide2"
+con <- makeContrasts(levels=design,
+    gCRISPRi.heterogeneous_dCas9_KRAB.Ch_TOG_guide_1.batch_6
+    - gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_6)
 colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)
@@ -271,8 +270,10 @@ Repeating with a log-fold change threshold of 0.5.
 Testing for DE between MALAT1-knockdowns and the control guide.
 
 ```{r}
-fname <- "CRISPRi_MALAT1"
-con <- makeContrasts(gMalat84 - gNC2_CRISPRi, levels=design)
+fname <- "CRISPRi_het_MALAT1_vs_negguide2"
+con <- makeContrasts(levels=design,
+    gCRISPRi.heterogeneous_dCas9_KRAB.MALAT1_guide_1.batch_6
+    - gCRISPRi.heterogeneous_dCas9_KRAB.Negative_control_guide_2.batch_6)
 colnames(con) <- fname
 fit2 <- contrasts.fit(fit, con)
 fit2 <- eBayes(fit2, robust=TRUE)

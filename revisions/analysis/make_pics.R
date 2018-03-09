@@ -11,7 +11,8 @@ threshold <- max(all.p[adj.p <= 0.05])
 
 # Setting up a function to compare between the different technologies.
 dir.create("pics")
-PROCESSOR <- function(positive, negative, target, pos.lab="Y", neg.lab="X", largest=5, ..., col="red", arrow.col="black") {
+PROCESSOR <- function(positive, negative, target, pos.lab="Y", neg.lab="X", largest=5, ..., 
+                      pos.col="red", neg.col="blue", both.col="black", arrow.col="black") {
     shared <- intersect(rownames(positive), rownames(negative))
     positive <- positive[shared,]
     negative <- negative[shared,]
@@ -28,17 +29,18 @@ PROCESSOR <- function(positive, negative, target, pos.lab="Y", neg.lab="X", larg
          ylim=c(-largest, largest), ...)
 
     PnN <- is.P & !is.N
-    points(X[PnN], Y[PnN], col=col, pch=16)
+    points(X[PnN], Y[PnN], col=pos.col, pch=16)
     NnP <- !is.P & is.N
-    points(X[NnP], Y[NnP], col=col, bg="white", pch=21)
+    points(X[NnP], Y[NnP], col=neg.col, pch=16)
     NP <- is.P & is.N
-    points(X[NP], Y[NP], col=col, pch=4)
+    points(X[NP], Y[NP], col=both.col, bg="white", pch=23, cex=1.2)
 
     arrows(X[chosen] - 0.5, Y[chosen], X[chosen] - 0.1, Y[chosen], lwd=2, length=0.1, col=arrow.col)
 
-    legend("topright", pch=c(16, 21, 4), legend=c(sprintf("DE in %s only (%i)", pos.lab, sum(PnN)),
-                                                  sprintf("DE in %s only (%i)", neg.lab, sum(NnP)),
-                                                  sprintf("DE in both (%i)", sum(NP))), col=col)
+    legend("topright", pch=c(16, 16, 23), col=c(pos.col, neg.col, both.col),
+           legend=c(sprintf("DE in %s only (%i)", pos.lab, sum(PnN)),
+                    sprintf("DE in %s only (%i)", neg.lab, sum(NnP)),
+                    sprintf("DE in both (%i)", sum(NP))))
     return(NULL)
 }
 
@@ -46,41 +48,52 @@ PROCESSOR <- function(positive, negative, target, pos.lab="Y", neg.lab="X", larg
 pdf("pics/TOG_methods.pdf")
 PROCESSOR(all.results$TOG.CRISPRi, all.results$TOG.RNAi,
           xlab="siRNA versus Dharmacon", ylab="CRISPRi vs negative guide", 
-          target="CKAP5", main="ch-TOG", pos.lab="CRISPRi", neg.lab="RNAi", col="black", arrow.col="red")
+          target="CKAP5", main="ch-TOG", pos.lab="CRISPRi", neg.lab="RNAi", 
+          pos.col="brown", neg.col="purple", arrow.col="red")
 dev.off()
 
 pdf("pics/MALAT1_methods.pdf")
 PROCESSOR(all.results$MALAT1.CRISPRi, all.results$MALAT1.LNA,
           xlab="LNA versus negative control A", ylab="CRISPRi vs negative guide", 
-          target="MALAT1", main="MALAT1", pos.lab="CRISPRi", neg.lab="LNA", col="black", arrow.col="red")
+          target="MALAT1", main="MALAT1", 
+          pos.lab="CRISPRi", neg.lab="LNA", 
+          pos.col="brown", neg.col="dodgerblue", arrow.col="red")
 dev.off()
 
-# Drugs.
-pdf("pics/Monastrol.pdf")
-monastrol <- read.table("results_lfc/Monastrol.txt", header=TRUE)
-PROCESSOR(all.results$TOG.RNAi, monastrol,
-          xlab="Monastrol vs unstreated", 
-          ylab="ch-TOG RNAi versus control Dharmacon", 
-          target="CKAP5", main="RNAi (ch-TOG)", pos.lab="CRISPRi", neg.lab="treated", col="brown")
+## Drugs.
+#pdf("pics/Monastrol.pdf")
+#monastrol <- read.table("results_lfc/Monastrol.txt", header=TRUE)
+#PROCESSOR(all.results$TOG.RNAi, monastrol,
+#          xlab="Monastrol vs unstreated", 
+#          ylab="ch-TOG RNAi versus control Dharmacon", 
+#          target="CKAP5", main="RNAi (ch-TOG)", pos.lab="CRISPRi", neg.lab="treated", col="brown")
+#
+#PROCESSOR(all.results$TOG.CRISPRi, monastrol,
+#          xlab="Monastrol vs unstreated", 
+#          ylab="ch-TOG CRISPRi versus control guide", 
+#          target="CKAP5", main="CRISPRi (ch-TOG)", pos.lab="CRISPRi", neg.lab="treated", col="brown")
+#dev.off()
+#
+#pdf("pics/NOCO.pdf")
+#monastrol <- read.table("results_lfc/NOCO.txt", header=TRUE)
+#PROCESSOR(all.results$TOG.RNAi, monastrol,
+#          xlab="NOCO vs unstreated", 
+#          ylab="ch-TOG RNAi versus control Dharmacon", 
+#          target="CKAP5", main="RNAi (ch-TOG)", pos.lab="CRISPRi", neg.lab="treated", col="brown")
+#
+#PROCESSOR(all.results$TOG.CRISPRi, monastrol,
+#          xlab="NOCO vs unstreated", 
+#          ylab="ch-TOG CRISPRi versus control guide", 
+#          target="CKAP5", main="CRISPRi (ch-TOG)", pos.lab="CRISPRi", neg.lab="treated", col="brown")
+#dev.off()
 
-PROCESSOR(all.results$TOG.CRISPRi, monastrol,
-          xlab="Monastrol vs unstreated", 
-          ylab="ch-TOG CRISPRi versus control guide", 
-          target="CKAP5", main="CRISPRi (ch-TOG)", pos.lab="CRISPRi", neg.lab="treated", col="brown")
-dev.off()
+###############################
+# Looking at the intersection of CRISPRi and RNAi for TOG.
 
-pdf("pics/NOCO.pdf")
-monastrol <- read.table("results_lfc/NOCO.txt", header=TRUE)
-PROCESSOR(all.results$TOG.RNAi, monastrol,
-          xlab="NOCO vs unstreated", 
-          ylab="ch-TOG RNAi versus control Dharmacon", 
-          target="CKAP5", main="RNAi (ch-TOG)", pos.lab="CRISPRi", neg.lab="treated", col="brown")
-
-PROCESSOR(all.results$TOG.CRISPRi, monastrol,
-          xlab="NOCO vs unstreated", 
-          ylab="ch-TOG CRISPRi versus control guide", 
-          target="CKAP5", main="CRISPRi (ch-TOG)", pos.lab="CRISPRi", neg.lab="treated", col="brown")
-dev.off()
+keep <- intersect(rownames(all.results$TOG.RNAi)[all.results$TOG.RNAi$P.Value <= threshold],
+                  rownames(all.results$TOG.CRISPRi)[all.results$TOG.CRISPRi$P.Value <= threshold])
+collected <- cbind(Symbol=all.results$TOG.RNAi[keep,1], RNAi=all.results$TOG.RNAi[keep,-1], CRISPRi=all.results$TOG.CRISPRi[keep,-1])
+write.table(collected, file=file.path("results_lfc", "combined.txt"), col.names=NA, quote=FALSE, sep="\t")
 
 ###############################
 

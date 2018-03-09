@@ -148,17 +148,14 @@ dev.off()
 
 ###############################
 
-makeVolcano <- function(tab, threshold, target, ylim=c(0, 30), xlim=c(-6, 6), 
-                        sig.col="black", chosen.col="red", chosen.pch=2, ...) {
+makeVolcano <- function(tab, threshold, target, ylim=c(0, 30), xlim=c(-6, 6), chosen.col="red", chosen.pch=2, ...) {
     pvalues <- tab$P.Value 
     logFCs <- tab$logFC
-    sig <- pvalues <= threshold
 
     lp <- -log10(pvalues)
     par(mar=c(5.1, 5.1, 4.1, 2.1))
-    plot(logFCs[!sig], lp[!sig], pch=16, col="grey50", cex.axis=1.2, cex.lab=1.4, xlab=expression(Log[2]~"fold change"), 
+    plot(logFCs, lp, pch=16, col="grey50", cex.axis=1.2, cex.lab=1.4, xlab=expression(Log[2]~"fold change"), 
          ylab=expression("-"*Log[10]~"P-value"), xlim=xlim, ylim=ylim, cex=1.5, ...)
-    points(logFCs[sig], lp[sig], pch=16, col=sig.col, cex=1.5)
 
     chosen <- tab$Symbol==target
     points(logFCs[chosen], lp[chosen], pch=16, col=chosen.col, cex=chosen.pch)
@@ -169,10 +166,10 @@ makeVolcano <- function(tab, threshold, target, ylim=c(0, 30), xlim=c(-6, 6),
 }
 
 pdf("pics/volcano.pdf")
-makeVolcano(all.results$TOG.RNAi, threshold, "CKAP5", sig.col=tech.colors$RNAi, main="RNAi (ch-TOG)")
-makeVolcano(all.results$TOG.CRISPRi, threshold, "CKAP5", sig.col=tech.colors$CRISPRi.het, main="CRISPRi (ch-TOG)")
-makeVolcano(all.results$MALAT1.LNA, threshold, "MALAT1", sig.col=tech.colors$LNA, main="LNA (MALAT1)")
-makeVolcano(all.results$MALAT1.CRISPRi, threshold, "MALAT1", sig.col=tech.colors$CRISPRi.het, main="CRISPRi (MALAT1)")
+makeVolcano(all.results$TOG.RNAi, threshold, "CKAP5", main="RNAi (Ch-TOG)")
+makeVolcano(all.results$TOG.CRISPRi, threshold, "CKAP5", main="CRISPRi (Ch-TOG)")
+makeVolcano(all.results$MALAT1.LNA, threshold, "MALAT1", main="LNA (MALAT1)")
+makeVolcano(all.results$MALAT1.CRISPRi, threshold, "MALAT1", main="CRISPRi (MALAT1)")
 dev.off()
 
 

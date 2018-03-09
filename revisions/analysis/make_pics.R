@@ -142,3 +142,35 @@ FUN("CRISPRi_TOG.txt", threshold, main="CRISPRi (ch-TOG)")
 FUN("LNA_MALAT1.txt", threshold, main="LNA (MALAT1)")
 FUN("CRISPRi_MALAT1.txt", threshold, main="CRISPRi (MALAT1)")
 dev.off()
+
+###############################
+
+makeVolcano <- function(fname, threshold, target, ylim=c(0, 30), xlim=c(-6, 6), 
+                        sig.col="black", chosen.col="red", chosen.pch=2, ...) {
+    tab <- read.table(file.path("results_lfc", fname), header=TRUE, stringsAsFactors=FALSE, sep="\t")
+    pvalues <- tab$P.Value 
+    logFCs <- tab$logFC
+    sig <- pvalues <= threshold
+
+    lp <- -log10(pvalues)
+    par(mar=c(5.1, 5.1, 4.1, 2.1))
+    plot(logFCs[!sig], lp[!sig], pch=16, col="grey50", cex.axis=1.2, cex.lab=1.4, xlab=expression(Log[2]~"fold change"), 
+         ylab=expression("-"*Log[10]~"P-value"), xlim=xlim, ylim=ylim, cex=1.5, ...)
+    points(logFCs[sig], lp[sig], pch=16, col=sig.col, cex=1.5)
+
+    chosen <- tab$Symbol==target
+    points(logFCs[chosen], lp[chosen], pch=16, col=chosen.col, cex=chosen.pch)
+
+    abline(v=-0.5, col="red", lwd=2, lty=2)
+    abline(v=0.5, col="red", lwd=2, lty=2)
+    abline(h=-log10(threshold), col="red", lwd=2, lty=2)
+}
+
+pdf("pics/volcano.pdf")
+makeVolcano("siRNA_TOG.txt", threshold, "CKAP5", sig.col="purple", main="RNAi (ch-TOG)")
+makeVolcano("CRISPRi_TOG.txt", threshold, "CKAP5", sig.col="brown", main="CRISPRi (ch-TOG)")
+makeVolcano("LNA_MALAT1.txt", threshold, "MALAT1", sig.col="dodgerblue", main="LNA (MALAT1)")
+makeVolcano("CRISPRi_MALAT1.txt", threshold, "MALAT1", sig.col="brown", main="CRISPRi (MALAT1)")
+dev.off()
+
+

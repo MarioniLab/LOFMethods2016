@@ -46,7 +46,7 @@ ynew$samples$block <- paste0("6", ynew$samples$block)
 y <- cbind(yold, ynew)
 ```
 
-To equalize power, we only keep two of each condition.
+To equalize power, we only keep two replicates for each condition.
 We also discard conditions that are not relevant to our comparison.
 
 ```{r}
@@ -91,7 +91,9 @@ design <- design[,!colnames(design)%in% c("b42", "b52", "b61", "b65")]
 c(ncol(design), qr(design)$rank)
 ```
 
-We normalize and estimate the variance with our restricted subset of libraries, to allow us to compare p-values between contrasts.
+We normalize and estimate the variance with our restricted subset of libraries.
+We use the same model fit across all our contrasts so that the samew vairance estimate is used.
+This avoids issues with differences in power between contrasts.
 
 ```{r}
 y <- calcNormFactors(y)
@@ -106,7 +108,8 @@ fit <- treat(lfc=0.5, fit, robust=TRUE)
 plotSA(fit)
 ```
 
-We set up a function to generate ROC curves.
+We set up a function to generate ROC curves based on the p-values.
+The idea is to define the ratio of the number of DE genes in the knockdown samples to the number of DE genes between the negative controls.
 
 ```{r}
 GEN <- function(pos, neg) {
@@ -125,6 +128,7 @@ con <- makeContrasts(levels=design,
 fit2 <- contrasts.fit(fit, con)
 fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
 rnai.neg <- fit2$p.value
+rnai.neg.lfc <- fit2$coefficients
 ```
 
 We then compare 289 knockdown.
@@ -136,6 +140,7 @@ con <- makeContrasts(levels=design,
 fit2 <- contrasts.fit(fit, con)
 fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
 rnai.289 <- fit2$p.value
+rnai.289.lfc <- fit2$coefficients
 ```
 
 And same for TOG.
@@ -145,6 +150,7 @@ con <- makeContrasts(levels=design, gTOGsi.batch_6 - gCon_Dharm.batch_6)
 fit2 <- contrasts.fit(fit, con)
 fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
 rnai.TOG <- fit2$p.value
+rnai.TOG.lfc <- fit2$coefficients
 ```
 
 We now look at these ROC curves.
@@ -168,6 +174,7 @@ con <- makeContrasts(levels=design,
 fit2 <- contrasts.fit(fit, con)
 fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
 lna.neg <- fit2$p.value
+lna.neg.lfc <- fit2$coefficients
 ```
 
 We then compare 289 knockdown.
@@ -179,6 +186,7 @@ con <- makeContrasts(levels=design,
 fit2 <- contrasts.fit(fit, con)
 fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
 lna.289 <- fit2$p.value
+lna.289.lfc <- fit2$coefficients
 ```
 
 And same for MALAT1.
@@ -188,6 +196,7 @@ con <- makeContrasts(levels=design, gMalat_LNA.batch_6 - gLNA_A.batch_6)
 fit2 <- contrasts.fit(fit, con)
 fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
 lna.MALAT <- fit2$p.value
+lna.MALAT.lfc <- fit2$coefficients
 ```
 
 We now look at these ROC curves.
@@ -211,6 +220,7 @@ con <- makeContrasts(levels=design,
 fit2 <- contrasts.fit(fit, con)
 fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
 crispri.neg <- fit2$p.value
+crispri.neg.lfc <- fit2$coefficients
 ```
 
 We then compare 289 knockdown.
@@ -222,6 +232,7 @@ con <- makeContrasts(levels=design,
 fit2 <- contrasts.fit(fit, con)
 fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
 crispri.289 <- fit2$p.value
+crispri.289.lfc <- fit2$coefficients
 ```
 
 And same for H19.
@@ -233,6 +244,7 @@ con <- makeContrasts(levels=design,
 fit2 <- contrasts.fit(fit, con)
 fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
 crispri.H19 <- fit2$p.value
+crispri.H19.lfc <- fit2$coefficients
 ```
 
 And same for TOG.
@@ -242,6 +254,7 @@ con <- makeContrasts(levels=design, gTOG94.batch_6 - gNC2_CRISPRi.batch_6)
 fit2 <- contrasts.fit(fit, con)
 fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
 crispri.TOG <- fit2$p.value
+crispri.TOG.lfc <- fit2$coefficients
 ```
 
 And same for MALAT1.
@@ -251,6 +264,7 @@ con <- makeContrasts(levels=design, gMalat84.batch_6 - gNC2_CRISPRi.batch_6)
 fit2 <- contrasts.fit(fit, con)
 fit2 <- treat(lfc=0.5, fit2, robust=TRUE)
 crispri.MALAT <- fit2$p.value
+crispri.MALAT.lfc <- fit2$coefficients
 ```
 
 We now look at these ROC curves.
@@ -268,17 +282,15 @@ legend("topleft", col=c("blue", "red", "black", "orange"),
 
 # Putting everything together
 
-We create a three-panel PDF where everything is stuck together, arranged by technology.
+We create a three-panel PDF where the ROC curves for all genes are combined, arranged by technology.
 
 ```{r}
 xlab <- "Number of DE genes between negative controls"
 ylab <- "Number of DE genes upon knockdown"
 xlim <- c(0, 200)
 ylim <- c(0, 2000)
-
 colors <- c(`289`="grey50", H19="blue", MALAT1="red", `ch-TOG`="goldenrod")
 xpos <- xlim[2] - 10
-
 pdf("pics/roc.pdf")
 
 # For RNAi
@@ -328,6 +340,77 @@ lines(o.crispri.H19, col=colors["H19"], lwd=3)
 text(xpos, o.crispri.H19[xlim[2]], "H19", pos=1)
 dev.off()
 ```
+
+We also compile the SNRs for the p-values at a value of 200 in the denominator.
+This provides us with stable estimates of the SNR that can be reasonably compared between methods. 
+
+```{r}
+o.rnai.TOG[200]/200
+o.rnai.289[200]/200
+o.lna.289[200]/200
+o.lna.MALAT[200]/200
+o.crispri.TOG[200]/200
+o.crispri.289[200]/200
+o.crispri.MALAT[200]/200
+o.crispri.H19[200]/200
+```
+
+We repeat this with the log-fold change, where we are looking for genes with large absolute log-fold changes rather than small p-values.
+This is probably less reliable than the p-values, but seems to give roughly similar conclusions.
+
+```{r}
+xlab <- "Genes with large log-fold changes between negative controls"
+ylab <- "Genes with large log-fold changes upon knockdown"
+pdf("pics/roc_lfc.pdf")
+
+# For RNAi
+o.rnai.TOG.lfc <- GEN(-abs(rnai.TOG.lfc), -abs(rnai.neg.lfc))
+plot(o.rnai.TOG.lfc, xlim=xlim, ylim=ylim, type="l", lwd=5,
+    xlab=xlab, ylab=ylab, main="RNAi")
+lines(o.rnai.TOG.lfc, lwd=3, col=colors["ch-TOG"])
+text(xpos, o.rnai.TOG.lfc[xlim[2]], "ch-TOG", pos=3)
+
+o.rnai.289.lfc <- GEN(-abs(rnai.289.lfc), -abs(rnai.neg.lfc))
+lines(o.rnai.289.lfc, lwd=5)
+lines(o.rnai.289.lfc, col=colors["289"], lwd=3)
+text(xpos, o.rnai.289.lfc[xlim[2]], "289", pos=3)
+
+# For LNA.
+o.lna.MALAT.lfc <- GEN(-abs(lna.MALAT.lfc), -abs(lna.neg.lfc))
+plot(o.lna.MALAT.lfc, xlim=xlim, ylim=ylim, type="l", lwd=5,
+    xlab=xlab, ylab=ylab, main="LNA")
+lines(o.lna.MALAT.lfc, col=colors["MALAT1"], lwd=3) 
+text(xpos, o.lna.MALAT.lfc[xlim[2]], "MALAT1", pos=3)
+
+o.lna.289.lfc <- GEN(-abs(lna.289.lfc), -abs(lna.neg.lfc))
+lines(o.lna.289.lfc, lwd=5)
+lines(o.lna.289.lfc, col=colors["289"], lwd=3)
+text(xpos, o.lna.289.lfc[xlim[2]], "289", pos=3)
+
+# For CRISPRi
+o.crispri.MALAT.lfc <- GEN(-abs(crispri.MALAT.lfc), -abs(crispri.neg.lfc))
+plot(o.crispri.MALAT.lfc, xlim=xlim, ylim=ylim, type="l", lwd=5,
+    xlab=xlab, ylab=ylab, main="CRISPRi")
+lines(o.crispri.MALAT.lfc, col=colors["MALAT1"], lwd=3) 
+text(xpos, o.crispri.MALAT.lfc[xlim[2]], "MALAT1", pos=3)
+
+o.crispri.289.lfc <- GEN(-abs(crispri.289.lfc), -abs(crispri.neg.lfc))
+lines(o.crispri.289.lfc, lwd=5)
+lines(o.crispri.289.lfc, col=colors["289"], lwd=3)
+text(xpos, o.crispri.289.lfc[xlim[2]], "289", pos=3)
+
+o.crispri.TOG.lfc <- GEN(-abs(crispri.TOG.lfc), -abs(crispri.neg.lfc))
+lines(o.crispri.TOG.lfc, lwd=5)
+lines(o.crispri.TOG.lfc, col=colors["ch-TOG"], lwd=3)
+text(xpos, o.crispri.TOG.lfc[xlim[2]] - 20, "ch-TOG", pos=1)
+
+o.crispri.H19.lfc <- GEN(-abs(crispri.H19.lfc), -abs(crispri.neg.lfc))
+lines(o.crispri.H19.lfc, lwd=5)
+lines(o.crispri.H19.lfc, col=colors["H19"], lwd=3)
+text(xpos, o.crispri.H19.lfc[xlim[2]], "H19", pos=1)
+dev.off()
+```
+
 
 # Session info
 

@@ -6,13 +6,17 @@ tech.colors <- list(RNAi="#7F4098CC", LNA="#28A8E0B3", CRISPRi="#F79420FF", CRIS
 
 ###############################
 
-all.p <- unlist(lapply(all.results, FUN="[[", i="P.Value"))
-adj.p <- p.adjust(all.p, method="BH")
-threshold <- max(all.p[adj.p <= 0.05])
+tog.p<- c(all.results$TOG.RNAi$P.Value, all.results$TOG.CRISPRi$P.Value)
+tog.adj.p <- p.adjust(tog.p, method="BH")
+tog.threshold <- max(tog.p[tog.adj.p <= 0.05])
+
+malat.p<- c(all.results$MALAT1.RNAi$P.Value, all.results$MALAT1.CRISPRi$P.Value)
+malat.adj.p <- p.adjust(malat.p, method="BH")
+malat.threshold <- max(malat.p[malat.adj.p <= 0.05])
 
 # Setting up a function to compare between the different technologies.
 dir.create("pics")
-PROCESSOR <- function(positive, negative, target, pos.lab="Y", neg.lab="X", largest=5, ..., 
+PROCESSOR <- function(positive, negative, target, threshold, pos.lab="Y", neg.lab="X", largest=5, ..., 
                       pos.col="red", neg.col="blue", pos.pch=16, neg.pch=16,
                       both.col="black", arrow.col="black") {
     shared <- intersect(rownames(positive), rownames(negative))
@@ -48,7 +52,7 @@ PROCESSOR <- function(positive, negative, target, pos.lab="Y", neg.lab="X", larg
 
 # Comparisons between methods, within the same gene.
 pdf("pics/TOG_methods.pdf")
-PROCESSOR(all.results$TOG.CRISPRi, all.results$TOG.RNAi,
+PROCESSOR(all.results$TOG.CRISPRi, all.results$TOG.RNAi, threshold=tog.threshold,
           xlab="siRNA versus Dharmacon", ylab="CRISPRi vs negative guide", 
           target="CKAP5", main="ch-TOG", pos.lab="CRISPRi", neg.lab="RNAi", 
           pos.col=tech.colors$CRISPRi.het, neg.col=tech.colors$RNAi, 
@@ -56,7 +60,7 @@ PROCESSOR(all.results$TOG.CRISPRi, all.results$TOG.RNAi,
 dev.off()
 
 pdf("pics/MALAT1_methods.pdf")
-PROCESSOR(all.results$MALAT1.CRISPRi, all.results$MALAT1.LNA,
+PROCESSOR(all.results$MALAT1.CRISPRi, all.results$MALAT1.LNA, threshold=malat.threshold,
           xlab="LNA versus negative control A", ylab="CRISPRi vs negative guide", 
           target="MALAT1", main="MALAT1", 
           pos.lab="CRISPRi", neg.lab="LNA", 
@@ -94,8 +98,8 @@ dev.off()
 ###############################
 # Looking at the intersection of CRISPRi and RNAi for TOG.
 
-keep <- intersect(rownames(all.results$TOG.RNAi)[all.results$TOG.RNAi$P.Value <= threshold],
-                  rownames(all.results$TOG.CRISPRi)[all.results$TOG.CRISPRi$P.Value <= threshold])
+keep <- intersect(rownames(all.results$TOG.RNAi)[all.results$TOG.RNAi$P.Value <= tog.threshold],
+                  rownames(all.results$TOG.CRISPRi)[all.results$TOG.CRISPRi$P.Value <= tog.threshold])
 collected <- cbind(Symbol=all.results$TOG.RNAi[keep,1], RNAi=all.results$TOG.RNAi[keep,-1], CRISPRi=all.results$TOG.CRISPRi[keep,-1])
 write.table(collected, file=file.path("results_lfc", "combined.txt"), col.names=NA, quote=FALSE, sep="\t")
 
@@ -140,10 +144,10 @@ FUN <- function(tab, threshold, main) {
 }
 
 pdf("pics/ma.pdf", width=10, height=5)
-FUN(all.results$TOG.RNAi, threshold, main="RNAi (ch-TOG)")
-FUN(all.results$TOG.CRISPRi, threshold, main="CRISPRi (ch-TOG)")
-FUN(all.results$MALAT1.LNA, threshold, main="LNA (MALAT1)")
-FUN(all.results$MALAT1.CRISPRi, threshold, main="CRISPRi (MALAT1)")
+FUN(all.results$TOG.RNAi, tog.threshold, main="RNAi (ch-TOG)")
+FUN(all.results$TOG.CRISPRi, tog.threshold, main="CRISPRi (ch-TOG)")
+FUN(all.results$MALAT1.LNA, malat.threshold, main="LNA (MALAT1)")
+FUN(all.results$MALAT1.CRISPRi, malat.threshold, main="CRISPRi (MALAT1)")
 dev.off()
 
 ###############################
@@ -166,10 +170,10 @@ makeVolcano <- function(tab, threshold, target, ylim=c(0, 30), xlim=c(-6, 6), ch
 }
 
 pdf("pics/volcano.pdf")
-makeVolcano(all.results$TOG.RNAi, threshold, "CKAP5", main="RNAi (Ch-TOG)")
-makeVolcano(all.results$TOG.CRISPRi, threshold, "CKAP5", main="CRISPRi (Ch-TOG)")
-makeVolcano(all.results$MALAT1.LNA, threshold, "MALAT1", main="LNA (MALAT1)")
-makeVolcano(all.results$MALAT1.CRISPRi, threshold, "MALAT1", main="CRISPRi (MALAT1)")
+makeVolcano(all.results$TOG.RNAi, tog.threshold, "CKAP5", main="RNAi (Ch-TOG)")
+makeVolcano(all.results$TOG.CRISPRi, tog.threshold, "CKAP5", main="CRISPRi (Ch-TOG)")
+makeVolcano(all.results$MALAT1.LNA, malat.threshold, "MALAT1", main="LNA (MALAT1)")
+makeVolcano(all.results$MALAT1.CRISPRi, malat.threshold, "MALAT1", main="CRISPRi (MALAT1)")
 dev.off()
 
 

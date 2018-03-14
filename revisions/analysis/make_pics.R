@@ -112,7 +112,7 @@ FUN <- function(tab, threshold, main) {
     y <- tab$logFC
     xlim <- range(x)
     ylim <- range(y)
-    sig <- tab$P.Value < threshold
+    sig <- tab$P.Value <= threshold
     up <- y > 0
 
     layout(rbind(1, c(2,3,4)), widths=c(3,2,2), heights=c(1,10))

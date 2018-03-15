@@ -1,8 +1,14 @@
 ########################################################################################
 # Coordinating the metadata obtainer with the file names.
 
-meta.data <- read.table("../../data/metadata.tsv", header=TRUE, stringsAsFactors=FALSE, sep="\t")
-md5.data <- read.table("../../data/fastq/md5.all")
+meta.data0 <- read.table("../data/metadata.tsv", header=TRUE, stringsAsFactors=FALSE, sep="\t")
+meta.data1 <- read.table("../revisions/data/metadata.tsv", header=TRUE, stringsAsFactors=FALSE, sep="\t")
+meta.data <- rbind(meta.data0, meta.data1)
+
+md5.data0 <- read.table("../data/fastq/md5.all")
+md5.data1 <- read.table("../revisions/data/fastq/md5.all")
+md5.data <- rbind(md5.data0, md5.data1)
+
 do.numbers <- sub("_.*", "", md5.data[,2])
 m <- match(do.numbers, meta.data$Library)
 stopifnot(all(!is.na(m)))
@@ -45,7 +51,7 @@ output[["Comment[sequencing date]"]] <- paste0(substr(final$Date, 1, 4), "-", su
 output[["Comment[experiment number]"]] <- final$Experiment
 output[["Array Data File"]] <- final$FileName
 output[["Protocol REF"]] <- "P-MTAB-53240"
-output[["Derived Array Data File"]] <- "lncRNA_counts.tsv"
+output[["Derived Array Data File"]] <- rep(c("lncRNA_counts.tsv", "additional_counts.tsv"), c(nrow(meta.data0), nrow(meta.data1)))
 output[["Comment[MD5]"]] <- final$MD5sum
 output[["Factor Value[loss of function method]"]] <- final$LOF
 output[["Factor Value[genotype]"]] <- final$Genotype

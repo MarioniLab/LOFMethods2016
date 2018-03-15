@@ -74,7 +74,7 @@ all.out[["Protocol Description"]] <- c("HeLa cells were obtained from American T
                                        "For RNAi and LNA, HeLa cells were transfected with Lipofectamine RNAiMax reagent (Thermo Fischer Scientific) following the manufacturer's instructions, using siRNAs (Thermo Fischer Scientifc) and LNA Gapmers (Exiqon) at a final concentration of 50 nM and 25nm, respectively. All experiments were done 48 hr after transfection. For CRISPRi, dCAS9-KRAB transduced cells were plated on a 12-well plate and infected with lentivirus containing the appropriate sgRNA vector. The virus was diluted with HeLa media (1:1 dilution) and cationic polymer polybrene was added to facilitate viral transduction (5 ug/ml, Sigma). After 24 hr incubation, supernatant was removed and fresh media was added for 48 hr before RNA collection. Samples with the same batch number were treated at roughly the same time (within the same month), while the experiment number is nested within batch and refers to cells treated on the same day.",
                                        "RNA (1 ug) was extracted with the RNeasy Kit (QIAGEN) and treated with DNase I following the manufacturer's instructions. RNA quality was assessed using a Total RNA Nano chip with a 2100 Bioanalyzer instrument (Agilent).",
                                        "RNA-seq libraries were prepared from HeLA cells using TruSeq Stranded Total RNA Kit with Ribo-Zero Gold (Illumina, RS-122-2303). Library quality was assessed using a DNA1000 chip with a 2100 Bioanalyzer instrument (Agilent).",
-                                       "Indexed libraries were PCR amplified and sequenced on multiple lanes of an Illumina Hiseq 2500 instrument to obtain 125 bp paired-end reads.",
+                                       "Indexed libraries were PCR amplified and sequenced on multiple lanes of an Illumina Hiseq 2500 instrument to obtain 125 bp paired-end reads. For batch 6, paired-end 125 bp sequencing was performed on an Illumina 4000 instrument instead.",
                                        "Reads were aligned to the hg38 build of the human genome using subread v1.5.3 in paired-end RNA-seq mode. The number of read pairs mapped to the exonic regions of each gene was then counted for each library, using the featureCounts function in Rsubread v1.28.0 with Ensembl GRCh38 version 90. Only alignments with mapping quality scores above 10 and forming reversely stranded fragments were considered during counting.",
                                        "The QuantiTect Reverse Transcription Kit (QIAGEN) was used for cDNA synthesis including an additional step to eliminate genomic DNA contamination.")
 all.out[["Protocol Hardware"]] <- c("BD FACSAria III cell sorter",
@@ -82,7 +82,7 @@ all.out[["Protocol Hardware"]] <- c("BD FACSAria III cell sorter",
                                     "",
                                     "2100 Bioanalyzer",
                                     "2100 Bioanalyzer",
-                                    "Illumina Hiseq 2500",
+                                    "Illumina Hiseq 2500, Illumina HiSeq 4000",
                                     "",
                                     "")
 all.out[["Protocol Software"]] <- c("", 

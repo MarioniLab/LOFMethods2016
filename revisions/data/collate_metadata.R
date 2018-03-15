@@ -52,12 +52,3 @@ write.table(file="metadata.tsv",
                        Experiment=metadata$Experiment,
                        Date=Date, Batch=Batch, LOF=LOF, Genotype=Genotype, Compound=Compound),                                   
             sep="\t", quote=FALSE, row.names=FALSE)
-
-##########################################
-# Identifying columns to remove in the count table.
-
-counts <- read.table("genic_counts.tsv", header=TRUE, check.names=FALSE)
-re.names <- sub("SLX-[0-9]+\\.", "", colnames(counts))
-re.names <- sub("\\..*", "", re.names)
-counts <- counts[, re.names %in% c("GeneID", "Length", metadata$Barcode)]
-write.table(file="subcounts.tsv", counts, sep="\t", quote=FALSE, row.names=FALSE)

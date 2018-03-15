@@ -35,7 +35,7 @@ dim(all.counts)
 ```
 
 ```{r, eval=!.use.local, echo=!.use.local}
-all.counts <- read.table("../arrayexpress/lncRNA_counts.tsv", header=TRUE, row.names=1, sep="\t",
+all.counts <- read.table("../../data/lncRNA_counts.tsv", header=TRUE, row.names=1, sep="\t",
     colClasses=c(list("character", "integer"), as.list(rep("integer", 768))))
 lengths <- all.counts[,1]
 all.counts <- all.counts[,-1]
@@ -61,8 +61,9 @@ metadata <- metadata[m,]
 ```
 
 ```{r, eval=!.use.local, echo=!.use.local}
-metadata <- read.table("../arrayexpress/E-MTAB-5308.sdrf.txt", 
+metadata <- read.table("../../data/E-MTAB-5308.sdrf.txt", 
     stringsAsFactors=FALSE, header=TRUE, sep="\t", check.names=FALSE)
+metadata <- metadata[metadata[["Comment[batch number]"]]!=6,] # ignore batch 6 for now (see revisions/).
 m <- match(colnames(all.counts), metadata[["Source Name"]])
 stopifnot(all(!is.na(m)))
 metadata <- metadata[m,]

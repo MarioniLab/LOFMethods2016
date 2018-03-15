@@ -27,7 +27,7 @@ if (!exists(".use.local")) { .use.local <- TRUE }
 Loading in the counts, and ignoring the first column of gene lengths.
 
 ```{r, eval=.use.local, echo=.use.local}
-all.counts <- read.table("../data/subcounts.tsv", header=TRUE, row.names=1, sep="\t",
+all.counts <- read.table("../data/genic_counts.tsv", header=TRUE, row.names=1, sep="\t",
     colClasses=c(list("character", "integer"), as.list(rep("integer", 51))))
 lengths <- all.counts[,1]
 all.counts <- all.counts[,-1]
@@ -38,7 +38,7 @@ Summing over the technical replicates.
 
 ```{r}
 library(edgeR)
-lib.name <- sub(".*(D[0-9]+_D[0-9]+).*", "\\1", colnames(all.counts))
+lib.name <- sub("_.*", "", colnames(all.counts))
 table(lib.name)
 all.counts <- sumTechReps(all.counts, lib.name)
 dim(all.counts)

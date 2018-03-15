@@ -23,7 +23,7 @@ fi
 tmp_meta=fastq/contents.csv
 scp hpcgate:/mnt/nas-srv002/jmlab/group_folders/lun01/Odom/lncRNA_mitosis/revisions_20180227/contents.csv ${tmp_meta}
 
-tmp_md5=fastq/md5.all
+tmp_md5=fastq/tmp.md5.all
 scp hpcgate:/mnt/nas-srv002/jmlab/group_folders/lun01/Odom/lncRNA_mitosis/revisions_20180227/fastq/md5.all ${tmp_md5}
 
 keep=$(cat metadata.tsv | cut -f1 | tail -n +2)

@@ -1,6 +1,5 @@
-# Requires the counting scripts in https://github.com/LTLA/CRUKtools.
 echo '
-anno.files <- file.path("/lustre/jmlab/resources/annotation", c("processed/hg38.gtf", "original/cas9_pHR_approx.gtf"))
+anno.files <- file.path("../../genomes/annotation", c("hg38.gtf", "cas9_pHR_approx.gtf"))
 bam.files <- list.files("bam", full=TRUE, pattern="bam$")
 ispet <- TRUE
 strandspec <- 2

@@ -2,7 +2,8 @@
 
 ## Overview
 
-This repository provides the code for the paper **Specificity of RNAi, LNA and CRISPRi as loss-of-function methods in transcriptional analysis**, by Stojic et al., currently in biorXiv (https://doi.org/10.1101/234930).
+This repository provides the code for the paper **Specificity of RNAi, LNA and CRISPRi as loss-of-function methods in transcriptional analysis**, 
+by [Stojic et al. (2018)](https://doi.org/10.1093/nar/gky437).
 
 ## Generating the results
 

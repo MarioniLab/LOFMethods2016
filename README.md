@@ -7,10 +7,9 @@ by [Stojic et al. (2018)](https://doi.org/10.1093/nar/gky437).
 
 ## Generating the results
 
-This repository contains code for Lovorka and Aaron's lncRNA loss-of-function project.
 To reproduce the results in Figures 1-4, and most of the supplementary figures:
 
-1. Run `download.sh`, which will download the SDRF file from ArrayExpress (E-MTAB-5308).
+1. Run `download.sh`, which will download the SDRF file from ArrayExpress using the accession code [E-MTAB-5308](http://www.ebi.ac.uk/arrayexpress/experiments/E-MTAB-5308).
 It will also download the processed data and place it in the relevant subdirectories.
 2. The `run_order.R` script in `analysis/differential/` executes all the Rmarkdown scripts to perform the DE (`de_analysis.Rmd`) and pathway analyses (`kegg.Rmd`).
 It also executes the various R scripts to create the necessary plots (`make_*.R`).
